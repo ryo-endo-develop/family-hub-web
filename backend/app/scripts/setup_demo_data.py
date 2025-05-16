@@ -1,14 +1,15 @@
 import asyncio
 import uuid
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import get_password_hash
+from app.core.security import create_access_token, get_password_hash
 from app.crud.task import create_tag, create_task
-from app.db.session import SessionLocal, init_db
+from app.db.session import SessionLocal
 from app.models.family import Family, FamilyMember
+from app.models.token import RefreshToken
 from app.models.user import User
 from app.schemas.task import TagCreate, TaskCreate
 
@@ -21,7 +22,7 @@ async def truncate_all_tables(db: AsyncSession):
     # データを削除
     await db.execute(
         text(
-            "TRUNCATE TABLE users, families, family_members, tasks, tags, task_tags RESTART IDENTITY CASCADE"
+            "TRUNCATE TABLE users, families, family_members, tasks, tags, task_tags, refresh_tokens RESTART IDENTITY CASCADE"
         )
     )
 
@@ -89,6 +90,32 @@ async def create_demo_users(db: AsyncSession):
 
     await db.commit()
     return users
+
+
+async def create_refresh_tokens(db: AsyncSession, users):
+    """デモユーザー用のリフレッシュトークンを作成"""
+    refresh_tokens = []
+
+    # 各ユーザーに対してリフレッシュトークンを作成
+    for user in users:
+        # リフレッシュトークンの有効期限（1週間）
+        expires_at = datetime.utcnow() + timedelta(days=7)
+
+        # JWTトークンを生成
+        token_str = create_access_token(
+            subject=str(user.id), expires_delta=timedelta(days=7)
+        )
+
+        # リフレッシュトークンをDBに保存
+        refresh_token = RefreshToken(
+            token=token_str, user_id=user.id, expires_at=expires_at, is_revoked=False
+        )
+
+        db.add(refresh_token)
+        refresh_tokens.append(refresh_token)
+
+    await db.commit()
+    return refresh_tokens
 
 
 async def create_demo_families(db: AsyncSession, users):
@@ -314,9 +341,6 @@ async def setup_demo_data():
     """デモデータをセットアップする"""
     async with SessionLocal() as db:
         try:
-            # DBの初期化
-            await init_db()
-
             # テーブルを空にする
             await truncate_all_tables(db)
 
@@ -324,18 +348,27 @@ async def setup_demo_data():
             users = await create_demo_users(db)
             print(f"✅ {len(users)} ユーザーを作成しました")
 
+            # リフレッシュトークンを作成
+            refresh_tokens = await create_refresh_tokens(db, users)
+            print(f"✅ {len(refresh_tokens)} リフレッシュトークンを作成しました")
+
             # デモ家族を作成
             families = await create_demo_families(db, users)
             print(f"✅ {len(families)} 家族を作成しました")
 
             # 田中家用のデモタグを作成
-            tanaka_family = families[0]
-            tags = await create_demo_tags(db, tanaka_family.id)
-            print(f"✅ {len(tags)} タグを作成しました")
+            if families:  # 家族が作成された場合のみ実行
+                tanaka_family = families[0]
+                tags = await create_demo_tags(db, tanaka_family.id)
+                print(f"✅ {len(tags)} タグを作成しました")
 
-            # 田中家用のデモタスクを作成
-            tasks = await create_demo_tasks(db, tanaka_family.id, users, tags)
-            print(f"✅ {len(tasks)} タスクを作成しました")
+                # 田中家用のデモタスクを作成
+                tasks = await create_demo_tasks(db, tanaka_family.id, users, tags)
+                print(f"✅ {len(tasks)} タスクを作成しました")
+            else:
+                print(
+                    "⚠️ 家族データが作成されなかったため、タグとタスクの作成をスキップしました。"
+                )
 
             print("✅ デモデータのセットアップが完了しました！")
 
@@ -353,4 +386,7 @@ async def setup_demo_data():
 
 
 if __name__ == "__main__":
+    print("コマンドラインからデモデータセットアップを実行します...")
+    # ここでDBが空っぽの場合、このスクリプト単体では失敗します。
+    # 先に `alembic upgrade head` を実行しておく必要があります。
     asyncio.run(setup_demo_data())

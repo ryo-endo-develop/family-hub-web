@@ -27,7 +27,7 @@ class FamilyResponse(FamilyBase):
     created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 # 家族メンバーモデル
@@ -61,11 +61,11 @@ class FamilyMemberResponse(FamilyMemberBase):
     user: UserResponse
     joined_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 # 家族詳細（メンバー情報を含む）レスポンスモデル
 class FamilyWithMembersResponse(FamilyResponse):
     members: List[FamilyMemberResponse] = []
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)

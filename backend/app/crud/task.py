@@ -4,6 +4,7 @@ from typing import List, Optional, Tuple
 
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.crud.base import CRUDBase
 from app.crud.family import is_user_family_member
@@ -29,6 +30,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             status=obj_in.status,
             priority=obj_in.priority,
             is_routine=obj_in.is_routine,
+            parent_id=obj_in.parent_id,  # 親タスクIDを設定
         )
 
         # タグがある場合は関連付け
@@ -93,7 +95,19 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         """
         特定の家族のタスクを検索（フィルタオプション付き）
         """
-        query = select(Task).where(Task.family_id == family_id)
+        # 基本クエリの構築
+        query = (
+            select(Task)
+            .options(
+                selectinload(Task.tags),
+                selectinload(Task.assignee),
+                selectinload(Task.created_by),
+                selectinload(Task.subtasks).selectinload(Task.tags),
+                selectinload(Task.subtasks).selectinload(Task.assignee),
+                selectinload(Task.subtasks).selectinload(Task.created_by),
+            )
+            .where(Task.family_id == family_id)
+        )
 
         # 各フィルタ条件を適用
         if assignee_id:
@@ -120,7 +134,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
 
         # タスクを取得
         result = await db.execute(query)
-        return result.scalars().all()
+        tasks = result.unique().scalars().all()
+        return tasks
 
     async def count_by_family(
         self,
@@ -163,7 +178,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
 
         # カウント実行
         result = await db.execute(query)
-        return result.scalar()
+        return result.scalar() or 0  # None の場合は0を返す
 
     async def get_task_with_relations(
         self, db: AsyncSession, *, task_id: uuid.UUID
@@ -174,9 +189,9 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         stmt = (
             select(Task)
             .options(
-                select.selectinload(Task.created_by),
-                select.selectinload(Task.assignee),
-                select.selectinload(Task.tags),
+                selectinload(Task.created_by),
+                selectinload(Task.assignee),
+                selectinload(Task.tags),
             )
             .where(Task.id == task_id)
         )
@@ -229,6 +244,127 @@ async def get_task_with_relations(
     return await task.get_task_with_relations(db, task_id=task_id)
 
 
+async def get_task_with_subtasks(
+    db: AsyncSession, *, task_id: uuid.UUID
+) -> Optional[Task]:
+    """
+    タスクとそのサブタスクを取得
+    """
+    stmt = (
+        select(Task)
+        .options(
+            selectinload(Task.created_by),
+            selectinload(Task.assignee),
+            selectinload(Task.tags),
+            selectinload(Task.subtasks).selectinload(Task.tags),
+            selectinload(Task.subtasks).selectinload(Task.assignee),
+            selectinload(Task.subtasks).selectinload(Task.created_by),
+        )
+        .where(Task.id == task_id)
+    )
+    result = await db.execute(stmt)
+    return result.scalars().first()
+
+
+async def get_root_tasks_by_family(
+    db: AsyncSession, *, family_id: uuid.UUID, **filter_params
+) -> List[Task]:
+    """
+    特定の家族のルートタスク（親タスクがないタスク）のみを取得
+    """
+    # 基本クエリの構築
+    query = (
+        select(Task)
+        .where(
+            and_(
+                Task.family_id == family_id,
+                Task.parent_id.is_(None),  # 親タスクがないもののみ
+            )
+        )
+        .options(
+            selectinload(Task.tags),
+            selectinload(Task.assignee),
+            selectinload(Task.created_by),
+            selectinload(Task.subtasks).selectinload(Task.tags),
+            selectinload(Task.subtasks).selectinload(Task.assignee),
+            selectinload(Task.subtasks).selectinload(Task.created_by),
+        )
+    )
+
+    # 各フィルタ条件を適用
+    if filter_params.get("assignee_id"):
+        query = query.where(Task.assignee_id == filter_params["assignee_id"])
+
+    if filter_params.get("status"):
+        query = query.where(Task.status == filter_params["status"])
+
+    if filter_params.get("is_routine") is not None:
+        query = query.where(Task.is_routine == filter_params["is_routine"])
+
+    if filter_params.get("due_before"):
+        query = query.where(Task.due_date <= filter_params["due_before"])
+
+    if filter_params.get("due_after"):
+        query = query.where(Task.due_date >= filter_params["due_after"])
+
+    if filter_params.get("tag_ids") and len(filter_params["tag_ids"]) > 0:
+        # タグでフィルタリング
+        query = (
+            query.join(task_tags).join(Tag).where(Tag.id.in_(filter_params["tag_ids"]))
+        )
+
+    # ページネーション
+    skip = filter_params.get("skip", 0)
+    limit = filter_params.get("limit", 100)
+    query = query.offset(skip).limit(limit)
+
+    # クエリの実行
+    result = await db.execute(query)
+    tasks = result.unique().scalars().all()
+    return tasks
+
+
+async def count_root_tasks_by_family(
+    db: AsyncSession, *, family_id: uuid.UUID, **filter_params
+) -> int:
+    """
+    特定の家族のルートタスク（親タスクがないタスク）の数をカウント
+    """
+    from sqlalchemy import func
+
+    query = select(func.count(Task.id)).where(
+        and_(
+            Task.family_id == family_id,
+            Task.parent_id.is_(None),  # 親タスクがないもののみ
+        )
+    )
+
+    # 各フィルタ条件を適用
+    if filter_params.get("assignee_id"):
+        query = query.where(Task.assignee_id == filter_params["assignee_id"])
+
+    if filter_params.get("status"):
+        query = query.where(Task.status == filter_params["status"])
+
+    if filter_params.get("is_routine") is not None:
+        query = query.where(Task.is_routine == filter_params["is_routine"])
+
+    if filter_params.get("due_before"):
+        query = query.where(Task.due_date <= filter_params["due_before"])
+
+    if filter_params.get("due_after"):
+        query = query.where(Task.due_date >= filter_params["due_after"])
+
+    if filter_params.get("tag_ids") and len(filter_params["tag_ids"]) > 0:
+        # タグでフィルタ
+        query = (
+            query.join(task_tags).join(Tag).where(Tag.id.in_(filter_params["tag_ids"]))
+        )
+
+    result = await db.execute(query)
+    return result.scalar() or 0  # None の場合は0を返す
+
+
 async def create_task(
     db: AsyncSession, task_create: TaskCreate, created_by_id: uuid.UUID
 ) -> Task:
@@ -260,8 +396,11 @@ async def get_family_tasks(
     """
     特定の家族のタスク一覧を取得し、合計数も返す
     """
+    # 検索とカウントのパラメータを分離する
+    count_params = {k: v for k, v in kwargs.items() if k not in ["skip", "limit"]}
+
     tasks = await task.get_multi_by_family(db, family_id=family_id, **kwargs)
-    count = await task.count_by_family(db, family_id=family_id, **kwargs)
+    count = await task.count_by_family(db, family_id=family_id, **count_params)
     return tasks, count
 
 
@@ -286,7 +425,7 @@ async def check_user_task_access(
     ユーザーがタスクにアクセス可能かどうかを確認し、タスクを返す
     """
     # タスクを取得
-    db_task = await get_task_by_id(db, task_id)
+    db_task = await get_task_with_relations(db, task_id)
     if not db_task:
         return None, False
 

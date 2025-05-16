@@ -47,6 +47,11 @@ class Task(Base):
         default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
+    # サブタスク機能のための追加フィールド
+    parent_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("tasks.id", ondelete="CASCADE"), nullable=True
+    )
+
     # リレーションシップ
     family: Mapped["Family"] = relationship("Family", back_populates="tasks")
     assignee: Mapped[Optional["User"]] = relationship(
@@ -58,6 +63,18 @@ class Task(Base):
     tags: Mapped[List["Tag"]] = relationship(
         secondary=task_tags,
         back_populates="tasks",
+    )
+
+    # サブタスク関連のリレーションシップ
+    parent: Mapped[Optional["Task"]] = relationship(
+        "Task", remote_side=[id], back_populates="subtasks", foreign_keys=[parent_id]
+    )
+    subtasks: Mapped[List["Task"]] = relationship(
+        "Task",
+        back_populates="parent",
+        cascade="all, delete-orphan",
+        foreign_keys=[parent_id],
+        lazy="select",
     )
 
 

@@ -16,7 +16,7 @@ class Response(BaseModel, Generic[DataT]):
     errors: Optional[list] = None
     success: bool = True
 
-    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True, populate_by_name=True)
 
 
 # ページネーション情報を含むレスポンススキーマ

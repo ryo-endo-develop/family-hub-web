@@ -3,7 +3,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.db.session import init_db
 from app.routers.api import api_router
 
 # FastAPIアプリケーションの作成
@@ -18,7 +17,9 @@ app = FastAPI(
 if settings.BACKEND_CORS_ORIGINS:
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
+        allow_origins=["*"]
+        if settings.DEBUG
+        else [str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -33,7 +34,10 @@ async def startup_event():
     """
     アプリケーション起動時の処理
     """
-    await init_db()
+    print(
+        "アプリケーションが起動しました。データベーススキーマはAlembicで管理されます。"
+    )  # 必要であればログメッセージをここに追加
+    pass  # 他に起動時処理がなければ pass
 
 
 @app.get("/")

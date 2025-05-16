@@ -17,8 +17,8 @@ TESTING = os.getenv("TESTING", "False").lower() in ("true", "1", "t")
 # テスト中はSQLiteを使用
 if TESTING:
     SQLALCHEMY_DATABASE_URL = (
-        "sqlite+aiosqlite:////tmp/test.db"
-    )  # ファイルベースのデータベースを使用
+        "sqlite+aiosqlite:////tmp/test.db"  # ファイルベースのデータベースを使用
+    )
     # SQLiteに必要な設定を追加
     connect_args = {"check_same_thread": False}
 else:
@@ -46,8 +46,13 @@ SessionLocal = async_sessionmaker(
 
 async def init_db() -> None:
     """
-    非同期にDBを初期化する関数
+    データベースの初期化処理（スキーマ作成はAlembicに委譲）。
+    将来的に、テーブル作成以外の初期化処理が必要な場合に使用します。
+    （例: 特定のDB拡張機能の有効化など）
     """
-    async with engine.begin() as conn:
-        # テーブルをすべて作成
-        await conn.run_sync(Base.metadata.create_all)
+    # async with engine.begin() as conn:
+    #     # テーブルをすべて作成する処理はAlembicに任せるため削除
+    #     # await conn.run_sync(Base.metadata.create_all)
+    print("データベーススキーマの作成・マイグレーションはAlembicで行ってください。")
+    print("init_db() はスキーマ作成を実行しません。")
+    pass

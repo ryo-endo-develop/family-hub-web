@@ -1,8 +1,14 @@
+import logging
 import os
 from typing import List, Optional
 
 from pydantic import AnyHttpUrl, ConfigDict, PostgresDsn, field_validator
 from pydantic_settings import BaseSettings
+
+# ログ設定
+logging.basicConfig(
+    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 
 
 class Settings(BaseSettings):

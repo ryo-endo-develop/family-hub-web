@@ -107,7 +107,7 @@ SELECT * FROM tasks;
    make setup-demo
 
    # または直接コマンドを実行する場合
-   docker-compose exec api python setup_demo.py
+   docker compose exec api python setup_demo.py
    ```
 
 #### デモユーザーアカウント

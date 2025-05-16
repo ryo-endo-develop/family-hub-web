@@ -1,0 +1,48 @@
+import { useEffect, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+
+import { checkAuth } from '../features/auth/authSlice';
+import { RootState } from '../app/store';
+
+/**
+ * 認証状態を管理するフック
+ * アプリ起動時に自動的に認証状態をチェック
+ */
+export const useAuth = () => {
+  const dispatch = useDispatch();
+  const { isAuthenticated, user, loading, error, currentFamily } = useSelector(
+    (state: RootState) => state.auth,
+  );
+
+  // 初期化済みかどうかのフラグ
+  const initialized = useRef(false);
+
+  // マウント時に一度だけ実行する初期化処理
+  useEffect(() => {
+    // 既に初期化済みなら何もしない
+    if (initialized.current) {
+      return;
+    }
+
+    // 初期化処理を実行
+    const initialize = async () => {
+      initialized.current = true;
+      try {
+        // 認証状態を確認
+        await dispatch(checkAuth());
+      } catch (error) {
+        console.error('認証状態の確認に失敗しました:', error);
+      }
+    };
+
+    initialize();
+  }, [dispatch]);
+
+  return {
+    isAuthenticated,
+    user,
+    loading,
+    error,
+    currentFamily,
+  };
+};

@@ -12,6 +12,9 @@ from app.crud.task import (
     delete_task,
     get_family_tags,
     get_family_tasks,
+    get_task_with_subtasks,
+    get_root_tasks_by_family,
+    count_root_tasks_by_family,
     update_task,
 )
 from app.models.task import Tag, Task
@@ -68,6 +71,73 @@ async def get_task_for_user(
     return task
 
 
+async def get_task_with_subtasks_for_user(
+    db: AsyncSession, task_id: uuid.UUID, user_id: uuid.UUID
+) -> Task:
+    """
+    サブタスクを含むタスクをユーザーが取得
+    """
+    # タスクへのアクセス権を確認
+    task = await get_task_for_user(db, task_id, user_id)
+    
+    # サブタスクを含めて取得
+    task_with_subtasks = await get_task_with_subtasks(db, task_id=task_id)
+    if not task_with_subtasks:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="タスクが見つかりません"
+        )
+    
+    return task_with_subtasks
+
+
+async def create_subtask_for_user(
+    db: AsyncSession, parent_id: uuid.UUID, task_in: TaskCreate, user_id: uuid.UUID
+) -> Task:
+    """
+    ユーザーがサブタスクを作成
+    """
+    # 親タスクへのアクセス権を確認
+    parent_task = await get_task_for_user(db, parent_id, user_id)
+    
+    # 親タスクの家族IDをサブタスクにも設定
+    task_in_data = task_in.model_dump()
+    task_data = TaskCreate(
+        **task_in_data,
+        parent_id=parent_id,
+        family_id=parent_task.family_id
+    )
+    
+    # サブタスクを作成
+    return await create_task(db, task_data, user_id)
+
+
+async def create_bulk_subtasks_for_user(
+    db: AsyncSession, parent_id: uuid.UUID, subtasks_in: List[TaskCreate], user_id: uuid.UUID
+) -> List[Task]:
+    """
+    ユーザーが複数のサブタスクを一括作成
+    """
+    # 親タスクへのアクセス権を確認
+    parent_task = await get_task_for_user(db, parent_id, user_id)
+    
+    created_subtasks = []
+    # 各サブタスクを作成
+    for task_in in subtasks_in:
+        # 親タスクの家族IDをサブタスクにも設定
+        task_in_data = task_in.model_dump()
+        task_data = TaskCreate(
+            **task_in_data,
+            parent_id=parent_id,
+            family_id=parent_task.family_id
+        )
+        
+        # サブタスクを作成
+        subtask = await create_task(db, task_data, user_id)
+        created_subtasks.append(subtask)
+    
+    return created_subtasks
+
+
 async def update_task_for_user(
     db: AsyncSession, task_id: uuid.UUID, task_update: TaskUpdate, user_id: uuid.UUID
 ) -> Task:
@@ -112,6 +182,32 @@ async def get_tasks_for_family(
 
     # タスク一覧を取得
     return await get_family_tasks(db, family_id, **filters)
+
+
+async def get_root_tasks_for_family(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    family_id: uuid.UUID,
+    filters: Dict[str, Any] = None,
+) -> Tuple[List[Task], int]:
+    """
+    ユーザーがアクセス可能な家族のルートタスク一覧を取得（サブタスクも含む）
+    """
+    # ユーザーが家族のメンバーであることを確認
+    await check_family_membership(db, user_id, family_id)
+
+    # フィルタが指定されていない場合は空の辞書を使用
+    if filters is None:
+        filters = {}
+    
+    # カウント用のパラメータを分離
+    count_params = {k: v for k, v in filters.items() if k not in ['skip', 'limit']}
+    
+    # ルートタスク一覧を取得（サブタスクも含む）
+    tasks = await get_root_tasks_by_family(db, family_id=family_id, **filters)
+    count = await count_root_tasks_by_family(db, family_id=family_id, **count_params)
+    
+    return tasks, count
 
 
 async def create_tag_for_family(

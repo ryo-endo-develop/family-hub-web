@@ -11,6 +11,7 @@ from app.db.session import Base
 if TYPE_CHECKING:
     from app.models.family import FamilyMember
     from app.models.task import Task
+    from app.models.token import RefreshToken
 
 
 class User(Base):
@@ -39,4 +40,8 @@ class User(Base):
 
     created_tasks: Mapped[List["Task"]] = relationship(
         "Task", foreign_keys="Task.created_by_id", back_populates="created_by"
+    )
+
+    refresh_tokens: Mapped[List["RefreshToken"]] = relationship(
+        "RefreshToken", back_populates="user", cascade="all, delete-orphan"
     )

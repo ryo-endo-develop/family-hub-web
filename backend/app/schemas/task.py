@@ -28,7 +28,9 @@ class TagResponse(TagBase):
     id: uuid.UUID
     family_id: uuid.UUID
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True, populate_by_name=True, arbitrary_types_allowed=True
+    )
 
 
 # タスクベースモデル
@@ -39,6 +41,7 @@ class TaskBase(BaseModel):
     status: str = "pending"  # pending, in_progress, completed
     priority: str = "medium"  # low, medium, high
     is_routine: bool = False
+    parent_id: Optional[uuid.UUID] = None  # 親タスクのID
 
 
 # リクエスト時に使用するタスクモデル
@@ -57,22 +60,75 @@ class TaskUpdate(BaseModel):
     assignee_id: Optional[uuid.UUID] = None
     is_routine: Optional[bool] = None
     tag_ids: Optional[List[uuid.UUID]] = None
+    parent_id: Optional[uuid.UUID] = None  # 親タスクIDの更新も可能に
+
+
+# サブタスク用の簡略化されたレスポンス（再帰的な無限ループを避けるため）
+class SubTaskResponse(BaseModel):
+    id: uuid.UUID
+    title: str
+    description: Optional[str] = None
+    family_id: uuid.UUID
+    assignee_id: Optional[uuid.UUID] = None
+    created_by_id: uuid.UUID
+    due_date: Optional[date] = None
+    status: str
+    priority: str
+    is_routine: bool
+    parent_id: Optional[uuid.UUID] = None
+    created_at: datetime
+    updated_at: datetime
+
+    # リレーションシップ
+    assignee: Optional[UserResponse] = None
+    created_by: UserResponse
+    tags: List[TagResponse] = []
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_encoders={
+            datetime: lambda dt: dt.isoformat(),
+            uuid.UUID: lambda u: str(u),
+        },
+        validate_assignment=True,
+    )
 
 
 # レスポンス時に使用するタスクモデル
-class TaskResponse(TaskBase):
+class TaskResponse(BaseModel):
     id: uuid.UUID
+    title: str
+    description: Optional[str] = None
     family_id: uuid.UUID
     assignee_id: Optional[uuid.UUID] = None
-    assignee: Optional[UserResponse] = None
     created_by_id: uuid.UUID
-    created_by: UserResponse
+    due_date: Optional[date] = None
+    status: str
+    priority: str
+    is_routine: bool
+    parent_id: Optional[uuid.UUID] = None
     created_at: datetime
     updated_at: datetime
+
+    # リレーションシップ
+    assignee: Optional[UserResponse] = None
+    created_by: UserResponse
     tags: List[TagResponse] = []
+    subtasks: List[SubTaskResponse] = []
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_encoders={
+            datetime: lambda dt: dt.isoformat(),
+            uuid.UUID: lambda u: str(u),
+        },
+        validate_assignment=True,
+    )
 
+
+# サブタスクの一括作成用のモデル
+class BulkSubtaskCreate(BaseModel):
+    subtasks: List[TaskCreate]
 
 # タスク一覧レスポンスモデル
 class TaskListResponse(BaseModel):
