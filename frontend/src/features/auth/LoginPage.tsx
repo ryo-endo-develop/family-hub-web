@@ -34,16 +34,15 @@ const LoginPage = () => {
   const dispatch = useDispatch();
   const location = useLocation();
   const { isAuthenticated, loading, error } = useAuth();
-  
+
   // ロケーションステートから登録成功フラグとメールアドレスを取得
   const registeredState = location.state as { registered?: boolean; email?: string } | null;
   const isRegistered = registeredState?.registered || false;
   const registeredEmail = registeredState?.email || '';
-  
+
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm<LoginFormInputs>({
     resolver: zodResolver(loginSchema),
@@ -66,12 +65,12 @@ const LoginPage = () => {
   }
 
   // フォーム送信
-  const onSubmit: SubmitHandler<LoginFormInputs> = async (data) => {
+  const onSubmit: SubmitHandler<LoginFormInputs> = async data => {
     const credentials: LoginCredentials = {
       email: data.email,
       password: data.password,
     };
-    
+
     try {
       await dispatch(login(credentials));
     } catch (error) {

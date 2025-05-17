@@ -1,6 +1,6 @@
 import { PayloadAction, createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
-import apiClient, { checkAuthStatus, getAccessToken, registerLogoutHandler, setAccessToken } from '../../api/client';
+import apiClient, { checkAuthStatus, setAccessToken } from '../../api/client';
 
 // 型定義
 export interface FamilyMembership {
@@ -64,60 +64,57 @@ const initialState: AuthState = {
 let isCheckingAuth = false;
 
 // アプリ起動時に認証状態を確認
-export const checkAuth = createAsyncThunk(
-  'auth/checkAuth',
-  async (_, { dispatch, rejectWithValue }) => {
-    try {
-      // 重複実行防止
-      if (isCheckingAuth) {
-        return rejectWithValue('すでに認証確認中です');
-      }
-      isCheckingAuth = true;
-      
-      // 認証状態を確認
-      const isAuthenticated = await checkAuthStatus();
-      
-      // 認証されていない場合は早期リターン
-      if (!isAuthenticated) {
-        isCheckingAuth = false;
-        return rejectWithValue('認証されていません');
-      }
-      
-      // ユーザー情報を取得
-      const userResponse = await apiClient.get('/users/me');
-      const user = userResponse.data.data;
-      
-      // 家族情報を取得
-      let currentFamilyId = null;
-      let currentFamilyName = null;
-      
-      try {
-        const familiesResponse = await apiClient.get('/families');
-        const families = familiesResponse.data.data;
-        
-        // 最初の家族をデフォルトとして使用
-        if (families && families.length > 0) {
-          currentFamilyId = families[0].id;
-          currentFamilyName = families[0].name;
-        }
-      } catch (err) {
-        console.error('家族情報の取得に失敗しました:', err);
-      }
-      
-      isCheckingAuth = false;
-      return {
-        user,
-        currentFamily: {
-          id: currentFamilyId,
-          name: currentFamilyName,
-        },
-      };
-    } catch (error) {
-      isCheckingAuth = false;
-      return rejectWithValue('認証に失敗しました');
+export const checkAuth = createAsyncThunk('auth/checkAuth', async (_, { rejectWithValue }) => {
+  try {
+    // 重複実行防止
+    if (isCheckingAuth) {
+      return rejectWithValue('すでに認証確認中です');
     }
+    isCheckingAuth = true;
+
+    // 認証状態を確認
+    const isAuthenticated = await checkAuthStatus();
+
+    // 認証されていない場合は早期リターン
+    if (!isAuthenticated) {
+      isCheckingAuth = false;
+      return rejectWithValue('認証されていません');
+    }
+
+    // ユーザー情報を取得
+    const userResponse = await apiClient.get('/users/me');
+    const user = userResponse.data.data;
+
+    // 家族情報を取得
+    let currentFamilyId = null;
+    let currentFamilyName = null;
+
+    try {
+      const familiesResponse = await apiClient.get('/families');
+      const families = familiesResponse.data.data;
+
+      // 最初の家族をデフォルトとして使用
+      if (families && families.length > 0) {
+        currentFamilyId = families[0].id;
+        currentFamilyName = families[0].name;
+      }
+    } catch (err) {
+      console.error('家族情報の取得に失敗しました:', err);
+    }
+
+    isCheckingAuth = false;
+    return {
+      user,
+      currentFamily: {
+        id: currentFamilyId,
+        name: currentFamilyName,
+      },
+    };
+  } catch (error) {
+    isCheckingAuth = false;
+    return rejectWithValue('認証に失敗しました');
   }
-);
+});
 
 // 非同期アクション
 export const login = createAsyncThunk(
@@ -137,22 +134,22 @@ export const login = createAsyncThunk(
 
       // アクセストークンの取得
       const { access_token } = response.data.data;
-      
+
       // アクセストークンをメモリに設定
       setAccessToken(access_token);
-      
+
       // ユーザー情報を取得
       const userResponse = await apiClient.get('/users/me');
       const user = userResponse.data.data;
-      
+
       // ユーザーの家族情報を取得
       let currentFamilyId = null;
       let currentFamilyName = null;
-      
+
       try {
         const familiesResponse = await apiClient.get('/families');
         const families = familiesResponse.data.data;
-        
+
         // 最初の家族をデフォルトとして使用
         if (families && families.length > 0) {
           currentFamilyId = families[0].id;
@@ -161,7 +158,7 @@ export const login = createAsyncThunk(
       } catch (err) {
         console.error('家族情報の取得に失敗しました:', err);
       }
-      
+
       return {
         user,
         currentFamily: {
@@ -177,7 +174,7 @@ export const login = createAsyncThunk(
       }
       return rejectWithValue(message);
     }
-  }
+  },
 );
 
 export const register = createAsyncThunk(
@@ -193,33 +190,30 @@ export const register = createAsyncThunk(
       }
       return rejectWithValue(message);
     }
-  }
+  },
 );
 
-export const logout = createAsyncThunk(
-  'auth/logoutAction',
-  async (_, { dispatch }) => {
-    try {
-      // サーバーにログアウトリクエストを送信
-      await apiClient.post('/auth/logout');
-    } catch (error) {
-      console.error('ログアウトAPI呼び出しエラー:', error);
-      // エラーが発生しても継続する
-    } finally {
-      // ログアウト処理（ローカルのみ）を実行
-      dispatch(logoutLocal());
-      // アクセストークンをクリア
-      setAccessToken(null);
-    }
+export const logout = createAsyncThunk('auth/logoutAction', async (_, { dispatch }) => {
+  try {
+    // サーバーにログアウトリクエストを送信
+    await apiClient.post('/auth/logout');
+  } catch (error) {
+    console.error('ログアウトAPI呼び出しエラー:', error);
+    // エラーが発生しても継続する
+  } finally {
+    // ログアウト処理（ローカルのみ）を実行
+    dispatch(logoutLocal());
+    // アクセストークンをクリア
+    setAccessToken(null);
   }
-);
+});
 
 // 現在の家族を設定するアクション
 export const setCurrentFamily = createAsyncThunk(
   'auth/setCurrentFamily',
-  async ({ id, name }: { id: string, name: string }) => {
+  async ({ id, name }: { id: string; name: string }) => {
     return { id, name };
-  }
+  },
 );
 
 // Slice
@@ -228,7 +222,7 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     // ローカルのログアウト処理（状態のクリアのみ）
-    logoutLocal: (state) => {
+    logoutLocal: state => {
       state.user = null;
       state.isAuthenticated = false;
       state.error = null;
@@ -237,33 +231,42 @@ const authSlice = createSlice({
         name: null,
       };
     },
-    clearError: (state) => {
+    clearError: state => {
       state.error = null;
     },
   },
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     // Login
-    builder.addCase(login.pending, (state) => {
+    builder.addCase(login.pending, state => {
       state.loading = true;
       state.error = null;
     });
-    builder.addCase(login.fulfilled, (state, action: PayloadAction<{ user: User; currentFamily: { id: string | null; name: string | null } }>) => {
-      state.loading = false;
-      state.isAuthenticated = true;
-      state.user = action.payload.user;
-      state.currentFamily = action.payload.currentFamily;
-    });
+    builder.addCase(
+      login.fulfilled,
+      (
+        state,
+        action: PayloadAction<{
+          user: User;
+          currentFamily: { id: string | null; name: string | null };
+        }>,
+      ) => {
+        state.loading = false;
+        state.isAuthenticated = true;
+        state.user = action.payload.user;
+        state.currentFamily = action.payload.currentFamily;
+      },
+    );
     builder.addCase(login.rejected, (state, action) => {
       state.loading = false;
       state.error = action.payload as string;
     });
 
     // Register
-    builder.addCase(register.pending, (state) => {
+    builder.addCase(register.pending, state => {
       state.loading = true;
       state.error = null;
     });
-    builder.addCase(register.fulfilled, (state) => {
+    builder.addCase(register.fulfilled, state => {
       state.loading = false;
     });
     builder.addCase(register.rejected, (state, action) => {
@@ -272,16 +275,25 @@ const authSlice = createSlice({
     });
 
     // Check Auth
-    builder.addCase(checkAuth.pending, (state) => {
+    builder.addCase(checkAuth.pending, state => {
       state.loading = true;
       state.error = null;
     });
-    builder.addCase(checkAuth.fulfilled, (state, action: PayloadAction<{ user: User; currentFamily: { id: string | null; name: string | null } }>) => {
-      state.loading = false;
-      state.user = action.payload.user;
-      state.isAuthenticated = true;
-      state.currentFamily = action.payload.currentFamily;
-    });
+    builder.addCase(
+      checkAuth.fulfilled,
+      (
+        state,
+        action: PayloadAction<{
+          user: User;
+          currentFamily: { id: string | null; name: string | null };
+        }>,
+      ) => {
+        state.loading = false;
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+        state.currentFamily = action.payload.currentFamily;
+      },
+    );
     builder.addCase(checkAuth.rejected, (state, action) => {
       state.loading = false;
       // 既に認証状態を確認中の場合はエラーメッセージのみをクリア
@@ -299,22 +311,25 @@ const authSlice = createSlice({
     });
 
     // Logout
-    builder.addCase(logout.pending, (state) => {
+    builder.addCase(logout.pending, state => {
       state.loading = true;
     });
-    builder.addCase(logout.fulfilled, (state) => {
+    builder.addCase(logout.fulfilled, state => {
       state.loading = false;
       // ※ 実際のログアウト処理はlogoutLocalアクションで行われる
     });
-    builder.addCase(logout.rejected, (state) => {
+    builder.addCase(logout.rejected, state => {
       state.loading = false;
       // エラーが発生しても状態はクリアする
     });
 
     // Set Current Family
-    builder.addCase(setCurrentFamily.fulfilled, (state, action: PayloadAction<{ id: string; name: string }>) => {
-      state.currentFamily = action.payload;
-    });
+    builder.addCase(
+      setCurrentFamily.fulfilled,
+      (state, action: PayloadAction<{ id: string; name: string }>) => {
+        state.currentFamily = action.payload;
+      },
+    );
   },
 });
 

@@ -15,7 +15,6 @@ import {
   Avatar,
   Alert,
   IconButton,
-  Snackbar,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
@@ -34,13 +33,7 @@ const FamilyPage = () => {
   const { addNotification } = useNotification();
 
   // 家族APIフックを利用
-  const { 
-    getFamilies, 
-    getFamilyMembers, 
-    removeFamilyMember,
-    loading: apiLoading, 
-    error: apiError 
-  } = useFamilyApi();
+  const { getFamilies, getFamilyMembers, removeFamilyMember, error: apiError } = useFamilyApi();
 
   // 状態管理
   const [families, setFamilies] = useState<Family[]>([]);
@@ -48,7 +41,7 @@ const FamilyPage = () => {
   const [loading, setLoading] = useState(false);
   const [membersLoading, setMembersLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // ダイアログの状態
   const [isCreateFamilyDialogOpen, setCreateFamilyDialogOpen] = useState(false);
   const [isAddMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
@@ -97,7 +90,9 @@ const FamilyPage = () => {
 
     // 自分自身を削除しようとしている場合は確認が必要
     if (userId === user?.id) {
-      const confirmed = window.confirm('自分自身を削除すると、この家族にアクセスできなくなります。よろしいですか？');
+      const confirmed = window.confirm(
+        '自分自身を削除すると、この家族にアクセスできなくなります。よろしいですか？',
+      );
       if (!confirmed) return;
     }
 
@@ -139,7 +134,7 @@ const FamilyPage = () => {
   // 新規家族ダイアログのハンドラ
   const handleCreateFamilyDialogClose = (refresh?: boolean, familyName?: string) => {
     setCreateFamilyDialogOpen(false);
-    
+
     if (refresh) {
       fetchFamilies();
       addNotification({
@@ -153,7 +148,7 @@ const FamilyPage = () => {
   // メンバー追加ダイアログのハンドラ
   const handleAddMemberDialogClose = (refresh?: boolean, memberEmail?: string) => {
     setAddMemberDialogOpen(false);
-    
+
     if (refresh && currentFamily?.id) {
       fetchFamilyMembers(currentFamily.id);
       addNotification({
@@ -197,9 +192,9 @@ const FamilyPage = () => {
             sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
           >
             <Typography variant="h6">家族一覧</Typography>
-            <Button 
-              variant="contained" 
-              size="small" 
+            <Button
+              variant="contained"
+              size="small"
               startIcon={<AddIcon />}
               onClick={() => setCreateFamilyDialogOpen(true)}
             >
@@ -243,9 +238,9 @@ const FamilyPage = () => {
               {currentFamily?.name ? `${currentFamily.name}のメンバー` : 'メンバー一覧'}
             </Typography>
             {currentFamily?.id && (
-              <Button 
-                variant="outlined" 
-                size="small" 
+              <Button
+                variant="outlined"
+                size="small"
                 startIcon={<AddIcon />}
                 onClick={() => setAddMemberDialogOpen(true)}
               >
@@ -267,10 +262,11 @@ const FamilyPage = () => {
           ) : (
             <List>
               {familyMembers.map(member => (
-                <ListItem key={member.id} 
+                <ListItem
+                  key={member.id}
                   secondaryAction={
-                    <IconButton 
-                      edge="end" 
+                    <IconButton
+                      edge="end"
                       aria-label="delete"
                       onClick={() => handleRemoveMember(member.user_id)}
                     >
@@ -295,17 +291,14 @@ const FamilyPage = () => {
       </Box>
 
       {/* 新規家族作成ダイアログ */}
-      <CreateFamilyDialog 
-        open={isCreateFamilyDialogOpen} 
-        onClose={handleCreateFamilyDialogClose} 
-      />
+      <CreateFamilyDialog open={isCreateFamilyDialogOpen} onClose={handleCreateFamilyDialogClose} />
 
       {/* メンバー追加ダイアログ */}
       {currentFamily?.id && (
-        <AddMemberDialog 
-          open={isAddMemberDialogOpen} 
+        <AddMemberDialog
+          open={isAddMemberDialogOpen}
           familyId={currentFamily.id}
-          onClose={handleAddMemberDialogClose} 
+          onClose={handleAddMemberDialogClose}
         />
       )}
     </Container>
