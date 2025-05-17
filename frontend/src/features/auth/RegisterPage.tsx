@@ -70,19 +70,27 @@ const RegisterPage = () => {
   }, [dispatch]);
 
   // フォーム送信
-  const onSubmit: SubmitHandler<RegisterFormInputs> = (data) => {
+  const onSubmit: SubmitHandler<RegisterFormInputs> = async (data) => {
     const userData: RegisterData = {
       first_name: data.first_name,
       last_name: data.last_name,
       email: data.email,
       password: data.password,
     };
-    dispatch(registerUser(userData))
-      .unwrap()
-      .then(() => {
-        // 登録成功後はログインページに遷移
-        navigate('/login', { state: { registered: true } });
+    
+    try {
+      await dispatch(registerUser(userData)).unwrap();
+      // 登録成功後はログインページに遷移
+      navigate('/login', { 
+        state: { 
+          registered: true,
+          email: data.email
+        } 
       });
+    } catch (err) {
+      console.error('ユーザー登録エラー:', err);
+      // エラーはすでにReduxにセットされているので、ここでは何もしない
+    }
   };
 
   return (

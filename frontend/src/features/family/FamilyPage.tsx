@@ -5,57 +5,51 @@ import {
   Card,
   CircularProgress,
   Container,
-  Divider,
   List,
   ListItem,
   ListItemAvatar,
-  ListItemSecondaryAction,
   ListItemText,
   Typography,
   Avatar,
-  IconButton,
   Alert,
+  IconButton,
+  Snackbar,
 } from '@mui/material';
-import { Add as AddIcon, Person as PersonIcon } from '@mui/icons-material';
+import { Add as AddIcon, Person as PersonIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
 import { useAppDispatch, useAppSelector } from '../../hooks/reduxHooks';
 import { setCurrentFamily } from '../auth/authSlice';
-import apiClient from '../../api/client';
-
-interface Family {
-  id: string;
-  name: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface FamilyMember {
-  id: string;
-  user_id: string;
-  family_id: string;
-  role: string;
-  is_admin: boolean;
-  joined_at: string;
-  user: {
-    id: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-    avatar_url?: string;
-  };
-}
+import { useFamilyApi, Family, FamilyMember } from '../../api/hooks/useFamilyApi';
+import { useNotification } from '../../contexts/NotificationContext';
+import CreateFamilyDialog from './components/CreateFamilyDialog';
+import AddMemberDialog from './components/AddMemberDialog';
 
 const FamilyPage = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { currentFamily } = useAppSelector(state => state.auth);
+  const { currentFamily, user } = useAppSelector(state => state.auth);
+  const { addNotification } = useNotification();
 
+  // 家族APIフックを利用
+  const { 
+    getFamilies, 
+    getFamilyMembers, 
+    removeFamilyMember,
+    loading: apiLoading, 
+    error: apiError 
+  } = useFamilyApi();
+
+  // 状態管理
   const [families, setFamilies] = useState<Family[]>([]);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [loading, setLoading] = useState(false);
   const [membersLoading, setMembersLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // ダイアログの状態
+  const [isCreateFamilyDialogOpen, setCreateFamilyDialogOpen] = useState(false);
+  const [isAddMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
 
   // 家族一覧を取得
   const fetchFamilies = async () => {
@@ -63,8 +57,12 @@ const FamilyPage = () => {
     setError(null);
 
     try {
-      const response = await apiClient.get('/families');
-      setFamilies(response.data.data);
+      const fetchedFamilies = await getFamilies();
+      if (fetchedFamilies) {
+        setFamilies(fetchedFamilies);
+      } else if (apiError) {
+        setError(apiError);
+      }
     } catch (err: any) {
       setError('家族情報の取得に失敗しました');
       console.error('家族情報取得エラー:', err);
@@ -80,12 +78,40 @@ const FamilyPage = () => {
     setMembersLoading(true);
 
     try {
-      const response = await apiClient.get(`/families/${familyId}/members`);
-      setFamilyMembers(response.data.data);
+      const fetchedMembers = await getFamilyMembers(familyId);
+      if (fetchedMembers) {
+        setFamilyMembers(fetchedMembers);
+      }
     } catch (err: any) {
       console.error('家族メンバー取得エラー:', err);
     } finally {
       setMembersLoading(false);
+    }
+  };
+
+  // メンバー削除ハンドラ
+  const handleRemoveMember = async (userId: string) => {
+    if (!currentFamily?.id) return;
+
+    // 自分自身を削除しようとしている場合は確認が必要
+    if (userId === user?.id) {
+      const confirmed = window.confirm('自分自身を削除すると、この家族にアクセスできなくなります。よろしいですか？');
+      if (!confirmed) return;
+    }
+
+    try {
+      const success = await removeFamilyMember(currentFamily.id, userId);
+      if (success) {
+        // メンバー削除成功
+        fetchFamilyMembers(currentFamily.id);
+        addNotification({
+          message: 'メンバーを削除しました',
+          type: 'success',
+          duration: 3000,
+        });
+      }
+    } catch (err) {
+      console.error('メンバー削除エラー:', err);
     }
   };
 
@@ -106,6 +132,34 @@ const FamilyPage = () => {
   const handleSelectFamily = async (family: Family) => {
     await dispatch(setCurrentFamily({ id: family.id, name: family.name }));
     navigate('/dashboard');
+  };
+
+  // 新規家族ダイアログのハンドラ
+  const handleCreateFamilyDialogClose = (refresh?: boolean, familyName?: string) => {
+    setCreateFamilyDialogOpen(false);
+    
+    if (refresh) {
+      fetchFamilies();
+      addNotification({
+        message: `家族「${familyName}」を作成しました`,
+        type: 'success',
+        duration: 3000,
+      });
+    }
+  };
+
+  // メンバー追加ダイアログのハンドラ
+  const handleAddMemberDialogClose = (refresh?: boolean, memberEmail?: string) => {
+    setAddMemberDialogOpen(false);
+    
+    if (refresh && currentFamily?.id) {
+      fetchFamilyMembers(currentFamily.id);
+      addNotification({
+        message: `メンバー「${memberEmail}」を追加しました`,
+        type: 'success',
+        duration: 3000,
+      });
+    }
   };
 
   // 役割の表示名を取得
@@ -141,7 +195,12 @@ const FamilyPage = () => {
             sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
           >
             <Typography variant="h6">家族一覧</Typography>
-            <Button variant="contained" size="small" startIcon={<AddIcon />}>
+            <Button 
+              variant="contained" 
+              size="small" 
+              startIcon={<AddIcon />}
+              onClick={() => setCreateFamilyDialogOpen(true)}
+            >
               新規家族
             </Button>
           </Box>
@@ -182,7 +241,12 @@ const FamilyPage = () => {
               {currentFamily?.name ? `${currentFamily.name}のメンバー` : 'メンバー一覧'}
             </Typography>
             {currentFamily?.id && (
-              <Button variant="outlined" size="small" startIcon={<AddIcon />}>
+              <Button 
+                variant="outlined" 
+                size="small" 
+                startIcon={<AddIcon />}
+                onClick={() => setAddMemberDialogOpen(true)}
+              >
                 メンバー追加
               </Button>
             )}
@@ -201,7 +265,17 @@ const FamilyPage = () => {
           ) : (
             <List>
               {familyMembers.map(member => (
-                <ListItem key={member.id}>
+                <ListItem key={member.id} 
+                  secondaryAction={
+                    <IconButton 
+                      edge="end" 
+                      aria-label="delete"
+                      onClick={() => handleRemoveMember(member.user_id)}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  }
+                >
                   <ListItemAvatar>
                     <Avatar src={member.user.avatar_url}>
                       {!member.user.avatar_url && <PersonIcon />}
@@ -217,6 +291,21 @@ const FamilyPage = () => {
           )}
         </Card>
       </Box>
+
+      {/* 新規家族作成ダイアログ */}
+      <CreateFamilyDialog 
+        open={isCreateFamilyDialogOpen} 
+        onClose={handleCreateFamilyDialogClose} 
+      />
+
+      {/* メンバー追加ダイアログ */}
+      {currentFamily?.id && (
+        <AddMemberDialog 
+          open={isAddMemberDialogOpen} 
+          familyId={currentFamily.id}
+          onClose={handleAddMemberDialogClose} 
+        />
+      )}
     </Container>
   );
 };

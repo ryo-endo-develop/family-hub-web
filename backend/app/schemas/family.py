@@ -61,7 +61,12 @@ class FamilyMemberResponse(FamilyMemberBase):
     user: UserResponse
     joined_at: datetime
 
-    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+    model_config = ConfigDict(
+        from_attributes=True, 
+        populate_by_name=True, 
+        # 辞書からのロードを有効化
+        extra='allow'
+    )
 
 
 # 家族詳細（メンバー情報を含む）レスポンスモデル

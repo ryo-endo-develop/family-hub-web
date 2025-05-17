@@ -1,6 +1,7 @@
-import { createTheme } from '@mui/material/styles';
+import { createTheme, responsiveFontSizes } from '@mui/material/styles';
 
-export const theme = createTheme({
+// 基本テーマの作成
+let baseTheme = createTheme({
   palette: {
     primary: {
       light: '#7986cb',
@@ -55,12 +56,62 @@ export const theme = createTheme({
     },
   },
   components: {
+    // グローバルなMUIコンポーネントのスタイル設定
+    MuiCssBaseline: {
+      styleOverrides: {
+        // スクロールバーのカスタマイズ
+        '*::-webkit-scrollbar': {
+          width: '8px',
+          height: '8px',
+        },
+        '*::-webkit-scrollbar-track': {
+          background: '#f1f1f1',
+        },
+        '*::-webkit-scrollbar-thumb': {
+          background: '#c1c1c1',
+          borderRadius: '4px',
+        },
+        '*::-webkit-scrollbar-thumb:hover': {
+          background: '#a8a8a8',
+        },
+        // モバイルでのタップハイライトを無効化
+        '*': {
+          '-webkit-tap-highlight-color': 'transparent',
+        },
+        // スムーズスクロールを全体に適用
+        'html': {
+          scrollBehavior: 'smooth',
+        },
+        // モバイルデバイスでの選択レイヤーのカスタマイズ
+        '@media (max-width: 600px)': {
+          '*': {
+            // モバイルでの長押し時のコンテキストメニューを調整
+            '-webkit-touch-callout': 'none',
+          },
+          'input, textarea': {
+            fontSize: '16px', // モバイルでのフォーム入力時のズームを防止
+          },
+        },
+      },
+    },
     MuiButton: {
       styleOverrides: {
         root: {
           textTransform: 'none',
           borderRadius: 8,
+          padding: '8px 16px',
+          // モバイル向けに調整
+          '@media (max-width: 600px)': {
+            padding: '10px 16px', // モバイルでタッチしやすいように少し大きく
+          },
         },
+        // 新しいスタイル：フロートアクションボタン
+        containedSizeLarge: {
+          padding: '12px 24px',
+        },
+      },
+      defaultProps: {
+        disableElevation: true, // フラットデザイン向け
       },
     },
     MuiCard: {
@@ -68,6 +119,10 @@ export const theme = createTheme({
         root: {
           borderRadius: 12,
           boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden', // カードコンテンツがはみ出さないように
+          '@media (max-width: 600px)': {
+            borderRadius: 8, // モバイルでは少し小さく
+          },
         },
       },
     },
@@ -76,6 +131,11 @@ export const theme = createTheme({
         root: {
           '& .MuiOutlinedInput-root': {
             borderRadius: 8,
+          },
+          '@media (max-width: 600px)': {
+            '& .MuiInputBase-input': {
+              padding: '14px 12px', // モバイルでタッチしやすいように調整
+            },
           },
         },
       },
@@ -87,5 +147,85 @@ export const theme = createTheme({
         },
       },
     },
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          '@media (max-width: 600px)': {
+            padding: '12px 8px', // モバイルでは余白を少し小さく
+          },
+        },
+        head: {
+          fontWeight: 600,
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          borderRadius: 16,
+          '@media (max-width: 600px)': {
+            height: 28, // モバイルでは少し小さく
+          },
+        },
+      },
+    },
+    MuiListItemButton: {
+      styleOverrides: {
+        root: {
+          '@media (max-width: 600px)': {
+            paddingTop: 12,
+            paddingBottom: 12, // モバイルでタッチしやすいように調整
+          },
+        },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          borderRadius: 12,
+          '@media (max-width: 600px)': {
+            margin: 16,
+            width: 'calc(100% - 32px)',
+            maxWidth: '100%',
+          },
+        },
+      },
+    },
+    // テーブルのレスポンシブ対応の強化
+    MuiTable: {
+      styleOverrides: {
+        root: {
+          '@media (max-width: 600px)': {
+            tableLayout: 'fixed', // モバイルでの表示を改善
+          },
+        },
+      },
+    },
+    // タブレット・モバイル向けのFAB調整
+    MuiFab: {
+      styleOverrides: {
+        root: {
+          '@media (max-width: 900px)': {
+            position: 'fixed',
+            bottom: 16,
+            right: 16,
+            zIndex: 1050,
+          },
+        },
+      },
+    },
+  },
+  // ブレイクポイントのカスタマイズ（必要に応じて）
+  breakpoints: {
+    values: {
+      xs: 0,     // モバイル
+      sm: 600,   // タブレット（縦向き）
+      md: 900,   // タブレット（横向き）
+      lg: 1200,  // デスクトップ
+      xl: 1536,  // ワイドスクリーン
+    },
   },
 });
+
+// レスポンシブフォントサイズを適用
+export const theme = responsiveFontSizes(baseTheme);

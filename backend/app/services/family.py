@@ -21,10 +21,11 @@ async def create_family_with_admin(
     """
     新しい家族を作成し、作成者を管理者として追加する
     """
-    # トランザクションを開始
-    async with db.begin():
-        # 家族を作成
-        family = await create_family(db, family_in)
+    try:
+        # 家族を作成（直接モデルを作成）
+        family = Family(name=family_in.name)
+        db.add(family)
+        await db.flush()  # IDを生成するためにフラッシュする
 
         # 作成者を管理者として追加
         family_member = FamilyMember(
@@ -34,9 +35,18 @@ async def create_family_with_admin(
             is_admin=True,  # 作成者は管理者
         )
         db.add(family_member)
-
-    # トランザクションがコミットされたら家族オブジェクトを返す
-    return family
+        
+        # 一つのトランザクションでコミット
+        await db.commit()
+        await db.refresh(family)  # 最新の状態を取得
+        
+        return family
+    
+    except Exception as e:
+        # エラーが発生した場合はロールバック
+        await db.rollback()
+        print(f"家族作成エラー: {str(e)}")
+        raise
 
 
 async def check_family_access(
@@ -85,37 +95,89 @@ async def add_family_member_by_email(
     """
     メールアドレスで指定したユーザーを家族に追加
     """
-    # 家族へのアクセス権を確認（管理者権限が必要）
-    await check_family_access(db, user_id, family_id, require_admin=True)
+    # デバッグログ追加
+    print(f"\nメンバー追加処理開始: user_id={user_id}, family_id={family_id}")
+    
+    try:
+        # 管理者権限チェック
+        is_admin = await is_user_family_admin(db, user_id, family_id)
+        print(f"\u7ba1理者権限チェック結果: {is_admin}")
+        
+        if not is_admin:
+            print(f"\u7ba1理者権限がありません: user_id={user_id}, family_id={family_id}")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="\u3053の操作には管理者権限が必要です",
+            )
+            
+        # 追加するユーザーを検索
+        target_user = await get_user_by_email(db, email=member_data.user_email)
+        if not target_user:
+            print(f"\u30e6ーザーが見つかりません: {member_data.user_email}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="\u6307定されたメールアドレスのユーザーが見つかりません",
+            )
 
-    # 追加するユーザーを検索
-    target_user = await get_user_by_email(db, email=member_data.user_email)
-    if not target_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="指定されたメールアドレスのユーザーが見つかりません",
+        # 既に家族のメンバーでないか確認
+        is_already_member = await is_user_family_member(db, target_user.id, family_id)
+        if is_already_member:
+            print(f"\u65e2にメンバーです: user_id={target_user.id}, family_id={family_id}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="\u3053のユーザーは既に家族のメンバーです",
+            )
+
+        # 家族にメンバーを追加
+        family_member = FamilyMember(
+            user_id=target_user.id,
+            family_id=family_id,
+            role=member_data.role,
+            is_admin=member_data.is_admin,
         )
-
-    # 既に家族のメンバーでないか確認
-    is_already_member = await is_user_family_member(db, target_user.id, family_id)
-    if is_already_member:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="このユーザーは既に家族のメンバーです",
-        )
-
-    # 家族にメンバーを追加
-    family_member = FamilyMember(
-        user_id=target_user.id,
-        family_id=family_id,
-        role=member_data.role,
-        is_admin=member_data.is_admin,
-    )
-    db.add(family_member)
-    await db.commit()
-    await db.refresh(family_member)
-
-    return family_member
+        db.add(family_member)
+        await db.commit()
+        await db.refresh(family_member)
+        
+        # ユーザーリレーションを事前ロードする
+        # 返却前にユーザー情報を明示的に読み込み、非同期コンテキストの外での参照問題を回避
+        # SQLAlchemy 2.0 では非同期アトリビュートアクセスに関する制限が厳しくなっている
+        
+        # ユーザー情報を取得して明示的に追加
+        from sqlalchemy import select
+        from app.models.user import User
+        
+        stmt = select(User).where(User.id == target_user.id)
+        result = await db.execute(stmt)
+        user_obj = result.scalars().first()
+        
+        # 返却環境のために辞書を作成
+        family_member_dict = {
+            "id": family_member.id,
+            "user_id": family_member.user_id,
+            "family_id": family_member.family_id,
+            "role": family_member.role,
+            "is_admin": family_member.is_admin,
+            "joined_at": family_member.joined_at,
+            "user": {
+                "id": user_obj.id,
+                "email": user_obj.email,
+                "first_name": user_obj.first_name,
+                "last_name": user_obj.last_name,
+                "avatar_url": user_obj.avatar_url,
+                "is_active": user_obj.is_active,
+                "created_at": user_obj.created_at,
+                "updated_at": user_obj.updated_at
+            }
+        }
+        
+        print(f"\u30e1ンバー追加成功: user_id={target_user.id}, family_id={family_id}")
+        return family_member_dict
+        
+    except Exception as e:
+        print(f"\u30e1ンバー追加中にエラー発生: {str(e)}")
+        await db.rollback()
+        raise
 
 
 async def remove_family_member(

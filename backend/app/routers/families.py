@@ -104,8 +104,19 @@ async def add_family_member(
     家族にメンバーを追加（管理者のみ可能）
     """
     # メンバーを追加（サービスレイヤーで管理者権限チェックを実施）
-    member = await add_family_member_by_email(db, family_id, current_user.id, member_in)
-    return Response(data=member, message="メンバーを追加しました")
+    try:
+        member = await add_family_member_by_email(db, family_id, current_user.id, member_in)
+        
+        # 返却値の型に応じて処理
+        if isinstance(member, dict):
+            # 辞書型の場合はそのまま使用
+            return Response(data=member, message="メンバーを追加しました")
+        else:
+            # FamilyMemberオブジェクトの場合は通常処理
+            return Response(data=member, message="メンバーを追加しました")
+    except Exception as e:
+        print(f"家族メンバー追加中にエラー発生: {str(e)}")
+        raise
 
 
 @router.get("/{family_id}/members", response_model=Response[List[FamilyMemberResponse]])

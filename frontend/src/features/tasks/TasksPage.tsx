@@ -1,4 +1,4 @@
-import { Box, Button, CircularProgress, Container, Typography, Alert, ToggleButtonGroup, ToggleButton, Paper } from '@mui/material';
+import { Box, Button, CircularProgress, Container, Typography, Alert, ToggleButtonGroup, ToggleButton, Paper, Fab, useMediaQuery, useTheme } from '@mui/material';
 import { Add as AddIcon, ViewList as ViewListIcon, AccountTree as AccountTreeIcon } from '@mui/icons-material';
 import { useCallback, useEffect, useState, useRef } from 'react';
 
@@ -16,6 +16,9 @@ import { useNotification } from '../../contexts/NotificationContext';
 type ViewMode = 'flat' | 'tree';
 
 const TasksPage = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const { currentFamily } = useAppSelector(state => state.auth);
   const { getTasks, getRootTasks, deleteTask, loading: apiLoading, error: apiError } = useTaskApi();
   const { addNotification } = useNotification();
@@ -31,7 +34,21 @@ const TasksPage = () => {
   const [parentTask, setParentTask] = useState<Task | null>(null);
   
   // 表示モード（フラットビュー or ツリービュー）
+  // モバイルまたはタブレットの場合は常にフラットビュー
   const [viewMode, setViewMode] = useState<ViewMode>('flat');
+
+  // 画面サイズが変わったときにモードを調整
+  useEffect(() => {
+    // 画面が小さい場合は常にフラットビューを使用
+    if (isTablet && viewMode === 'tree') {
+      setViewMode('flat');
+    }
+  }, [isTablet, viewMode]);
+  
+  // 初期表示では常にフラットビューを使用
+  useEffect(() => {
+    setViewMode('flat');
+  }, []);
 
   // フィルターを依存配列に含めないようにrefで管理
   const filtersRef = useRef<TaskFilter>({
@@ -62,8 +79,6 @@ const TasksPage = () => {
       isFetchingRef.current = true;
       setLoading(true);
       setError(null);
-
-      console.log(`タスク一覧取得開始 (${viewMode}ビュー):`, filtersRef.current);
 
       let response;
       
@@ -144,12 +159,12 @@ const TasksPage = () => {
   };
 
   // タスク作成/編集完了ハンドラ
-  const handleTaskFormClose = (refreshNeeded: boolean, isUpdate = false, taskTitle?: string) => {
+  const handleTaskFormClose = (refreshNeeded: boolean, taskTitle?: string) => {
     setIsFormOpen(false);
     
     if (refreshNeeded) {
       // 成功通知を表示
-      const actionText = isUpdate ? '更新' : '作成';
+      const actionText = !!selectedTask ? '更新' : '作成';
       const title = taskTitle || (selectedTask?.title || 'タスク');
       
       addNotification({
@@ -247,7 +262,13 @@ const TasksPage = () => {
   return (
     <Container maxWidth="lg">
       <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          mb: 3,
+          flexWrap: isMobile ? 'wrap' : 'nowrap',
+        }}>
           <Box>
             <Typography variant="h4" component="h1">
               タスク一覧
@@ -258,14 +279,18 @@ const TasksPage = () => {
               </Typography>
             )}
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleOpenCreateDialog}
-            disabled={!currentFamily.id || loading}
-          >
-            新規タスク
-          </Button>
+          
+          {/* デスクトップ用の新規タスクボタン */}
+          {!isMobile && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleOpenCreateDialog}
+              disabled={!currentFamily.id || loading}
+            >
+              新規タスク
+            </Button>
+          )}
         </Box>
 
         {!currentFamily.id && (
@@ -280,35 +305,45 @@ const TasksPage = () => {
           </Alert>
         )}
 
-        {/* フィルターと表示モード切替 */}
+        {/* フィルターパネルと表示モード切替 */}
         <Box sx={{ mb: 3 }}>
-          <Paper elevation={1} sx={{ p: 2, mb: 3 }}>
+          <Paper elevation={1} sx={{ p: 2 }}>
             <Box sx={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
-              alignItems: 'center'
+              alignItems: 'flex-start',
+              flexDirection: isMobile ? 'column' : 'row',
+              gap: isMobile ? 2 : 0,
             }}>
-              <TaskFilterPanel
-                filters={displayFilters}
-                onFilterChange={handleFilterChange}
-                disabled={loading}
-              />
+              <Box sx={{ width: '100%' }}>
+                <TaskFilterPanel
+                  filters={displayFilters}
+                  onFilterChange={handleFilterChange}
+                  disabled={loading}
+                />
+              </Box>
               
-              <ToggleButtonGroup
-                value={viewMode}
-                exclusive
-                onChange={handleViewModeChange}
-                aria-label="表示モード"
-                size="small"
-                sx={{ ml: 2 }}
-              >
-                <ToggleButton value="flat" aria-label="フラットビュー">
-                  <ViewListIcon />
-                </ToggleButton>
-                <ToggleButton value="tree" aria-label="ツリービュー">
-                  <AccountTreeIcon />
-                </ToggleButton>
-              </ToggleButtonGroup>
+              {/* タブレットより大きい画面でのみ表示モード切替を表示 */}
+              {!isTablet && (
+                <ToggleButtonGroup
+                  value={viewMode}
+                  exclusive
+                  onChange={handleViewModeChange}
+                  aria-label="表示モード"
+                  size="small"
+                  sx={{ 
+                    ml: 2,
+                    alignSelf: 'center'
+                  }}
+                >
+                  <ToggleButton value="flat" aria-label="フラットビュー">
+                    <ViewListIcon />
+                  </ToggleButton>
+                  <ToggleButton value="tree" aria-label="ツリービュー">
+                    <AccountTreeIcon />
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              )}
             </Box>
           </Paper>
         </Box>
@@ -318,7 +353,7 @@ const TasksPage = () => {
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
           <CircularProgress />
         </Box>
-      ) : viewMode === 'tree' ? (
+      ) : viewMode === 'tree' && !isTablet ? (
         <TaskListWithSubtasks
           tasks={tasks}
           onEdit={handleOpenEditDialog}
@@ -344,11 +379,29 @@ const TasksPage = () => {
         />
       )}
 
+      {/* モバイル用のフローティングアクションボタン */}
+      {isMobile && (
+        <Fab
+          color="primary"
+          aria-label="新規タスク"
+          onClick={handleOpenCreateDialog}
+          disabled={!currentFamily.id || loading}
+          sx={{
+            position: 'fixed',
+            bottom: 16,
+            right: 16,
+            zIndex: 1050,
+          }}
+        >
+          <AddIcon />
+        </Fab>
+      )}
+
       {isFormOpen && currentFamily.id && (
         <TaskFormDialog
           open={isFormOpen}
           task={selectedTask}
-          onClose={(refreshNeeded, title) => handleTaskFormClose(refreshNeeded, !!selectedTask, title)}
+          onClose={handleTaskFormClose}
           familyId={currentFamily.id}
         />
       )}

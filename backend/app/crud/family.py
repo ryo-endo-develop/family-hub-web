@@ -113,7 +113,7 @@ class CRUDFamily(CRUDBase[Family, FamilyCreate, FamilyUpdate]):
             and_(
                 FamilyMember.user_id == user_id,
                 FamilyMember.family_id == family_id,
-                FamilyMember.is_admin is True,
+                FamilyMember.is_admin == True,  # `is` 演算子ではなく `==` 演算子を使用
             )
         )
         result = await db.execute(stmt)

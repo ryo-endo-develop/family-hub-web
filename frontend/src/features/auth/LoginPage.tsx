@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import { useEffect } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -30,16 +30,23 @@ type LoginFormInputs = z.infer<typeof loginSchema>;
 
 const LoginPage = () => {
   const dispatch = useDispatch();
+  const location = useLocation();
   const { isAuthenticated, loading, error } = useAuth();
+  
+  // ロケーションステートから登録成功フラグとメールアドレスを取得
+  const registeredState = location.state as { registered?: boolean; email?: string } | null;
+  const isRegistered = registeredState?.registered || false;
+  const registeredEmail = registeredState?.email || '';
   
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginFormInputs>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
+      email: registeredEmail || '',
       password: '',
     },
   });
@@ -98,6 +105,12 @@ const LoginPage = () => {
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {error}
+              </Alert>
+            )}
+
+            {isRegistered && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                アカウント登録が完了しました。ログインしてサービスをご利用ください。
               </Alert>
             )}
 
