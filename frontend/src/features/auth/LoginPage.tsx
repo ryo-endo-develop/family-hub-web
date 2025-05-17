@@ -123,7 +123,6 @@ const LoginPage = () => {
                 id="email"
                 label="メールアドレス"
                 autoComplete="email"
-                autoFocus
                 {...register('email')}
                 error={!!errors.email}
                 helperText={errors.email?.message}

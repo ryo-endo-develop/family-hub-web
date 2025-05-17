@@ -22,7 +22,6 @@ import { DatePicker } from '@mui/x-date-pickers';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 
 import { useTaskApi } from '../../../../api/hooks/useTaskApi';
-import { useAppSelector } from '../../../../hooks/reduxHooks';
 import { SubtaskCreate, Task, subtaskCreateSchema } from '../../types';
 
 interface SubtaskFormDialogProps {
@@ -41,7 +40,6 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
     control,
     handleSubmit,
     reset,
-    watch,
     formState: { errors },
   } = useForm<SubtaskCreate>({
     resolver: zodResolver(subtaskCreateSchema),

@@ -23,7 +23,6 @@ import {
   ListItemText,
   ListItemAvatar,
   Typography,
-  useTheme,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
@@ -31,7 +30,6 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useFamilyApi } from '../../../api/hooks/useFamilyApi';
 import { useTagApi } from '../../../api/hooks/useTagApi';
 import { useTaskApi } from '../../../api/hooks/useTaskApi';
-import { useAppSelector } from '../../../hooks/reduxHooks';
 import { Task, TaskCreate, Tag, taskCreateSchema } from '../types';
 
 // 家族メンバーの型
