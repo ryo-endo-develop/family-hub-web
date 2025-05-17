@@ -31,7 +31,8 @@ import {
   Stack,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
-import { format , ja } from 'date-fns';
+import { format } from 'date-fns';
+import ja from 'date-fns/locale/ja';
 
 import { TaskFilter } from '../types';
 

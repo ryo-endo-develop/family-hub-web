@@ -1,6 +1,7 @@
 import { RestaurantMenu as MenuIcon } from '@mui/icons-material';
 import { Card, CardContent, CardHeader, Divider, Grid, Typography } from '@mui/material';
-import { format , ja } from 'date-fns';
+import { format } from 'date-fns';
+import ja from 'date-fns/locale/ja';
 
 interface MenuWidgetProps {
   familyId: string;

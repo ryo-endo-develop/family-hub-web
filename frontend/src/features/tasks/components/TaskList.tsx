@@ -28,7 +28,8 @@ import {
   useTheme,
   Stack,
 } from '@mui/material';
-import { format , ja } from 'date-fns';
+import { format } from 'date-fns';
+import ja from 'date-fns/locale/ja';
 
 import { Task } from '../types';
 

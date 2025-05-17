@@ -25,7 +25,8 @@ import {
   Typography,
   Chip,
 } from '@mui/material';
-import { format , ja } from 'date-fns';
+import { format } from 'date-fns';
+import ja from 'date-fns/locale/ja';
 
 import { Task } from '../../types';
 
@@ -78,14 +79,7 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, level, onEdit, onDelete, onAddS
           />
         );
       default:
-        return (
-          <Chip
-            label="未着手"
-            size="small"
-            color="default"
-            variant="outlined"
-          />
-        );
+        return <Chip label="未着手" size="small" color="default" variant="outlined" />;
     }
   };
 
@@ -103,30 +97,16 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, level, onEdit, onDelete, onAddS
           />
         );
       case 'medium':
-        return (
-          <Chip
-            label="中"
-            size="small"
-            color="warning"
-            variant="outlined"
-          />
-        );
+        return <Chip label="中" size="small" color="warning" variant="outlined" />;
       default:
-        return (
-          <Chip
-            label="低"
-            size="small"
-            color="default"
-            variant="outlined"
-          />
-        );
+        return <Chip label="低" size="small" color="default" variant="outlined" />;
     }
   };
 
   // 期限日の表示
   const getDueDateDisplay = (dueDate: Date | null) => {
     if (!dueDate) return '-';
-    
+
     try {
       return format(dueDate, 'yyyy/MM/dd', { locale: ja });
     } catch (error) {
@@ -137,34 +117,17 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, level, onEdit, onDelete, onAddS
   return (
     <>
       <TableRow hover sx={{ '& > *': { borderBottom: 'unset' } }}>
-        <TableCell 
-          component="th" 
-          scope="row" 
-          sx={{ paddingLeft: `${level * 24 + 16}px` }}
-        >
+        <TableCell component="th" scope="row" sx={{ paddingLeft: `${level * 24 + 16}px` }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             {hasSubtasks && (
-              <IconButton
-                aria-label="展開"
-                size="small"
-                onClick={() => setOpen(!open)}
-              >
+              <IconButton aria-label="展開" size="small" onClick={() => setOpen(!open)}>
                 {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
               </IconButton>
             )}
-            <Typography 
-              variant="body1" 
-              component="div" 
-              sx={{ ml: hasSubtasks ? 1 : 0 }}
-            >
+            <Typography variant="body1" component="div" sx={{ ml: hasSubtasks ? 1 : 0 }}>
               {task.title}
               {task.is_routine && (
-                <Chip
-                  label="ルーティン"
-                  size="small"
-                  color="secondary"
-                  sx={{ ml: 1 }}
-                />
+                <Chip label="ルーティン" size="small" color="secondary" sx={{ ml: 1 }} />
               )}
             </Typography>
           </Box>
@@ -173,15 +136,11 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, level, onEdit, onDelete, onAddS
         <TableCell>{getPriorityDisplay(task.priority)}</TableCell>
         <TableCell>{getDueDateDisplay(task.due_date)}</TableCell>
         <TableCell>
-          {task.assignee ? (
-            `${task.assignee.last_name} ${task.assignee.first_name}`
-          ) : (
-            '-'
-          )}
+          {task.assignee ? `${task.assignee.last_name} ${task.assignee.first_name}` : '-'}
         </TableCell>
         <TableCell>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-            {task.tags.map((tag) => (
+            {task.tags.map(tag => (
               <Chip
                 key={tag.id}
                 label={tag.name}
@@ -202,11 +161,7 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, level, onEdit, onDelete, onAddS
           >
             <AddIcon fontSize="small" />
           </IconButton>
-          <IconButton
-            aria-label="編集"
-            size="small"
-            onClick={() => onEdit(task)}
-          >
+          <IconButton aria-label="編集" size="small" onClick={() => onEdit(task)}>
             <EditIcon fontSize="small" />
           </IconButton>
           <IconButton
@@ -219,7 +174,7 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, level, onEdit, onDelete, onAddS
           </IconButton>
         </TableCell>
       </TableRow>
-      
+
       {/* サブタスク */}
       {hasSubtasks && (
         <TableRow>
@@ -228,7 +183,7 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, level, onEdit, onDelete, onAddS
               <Box sx={{ margin: 1 }}>
                 <Table size="small">
                   <TableBody>
-                    {task.subtasks.map((subtask) => (
+                    {task.subtasks.map(subtask => (
                       <TaskRow
                         key={subtask.id}
                         task={subtask}
@@ -296,7 +251,7 @@ const TaskListWithSubtasks: React.FC<TaskListProps> = ({
                 </TableCell>
               </TableRow>
             ) : (
-              tasks.map((task) => (
+              tasks.map(task => (
                 <TaskRow
                   key={task.id}
                   task={task}
