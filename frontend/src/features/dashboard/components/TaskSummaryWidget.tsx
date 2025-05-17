@@ -14,28 +14,70 @@ import {
 import { Assignment as AssignmentIcon } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import { useTaskApi } from '../../../api/hooks/useTaskApi';
+import { Task } from '../../tasks/types';
 
 interface TaskSummaryWidgetProps {
   familyId: string;
 }
 
 const TaskSummaryWidget = ({ familyId }: TaskSummaryWidgetProps) => {
-  const { getTasks, loading, error } = useTaskApi();
-  const [tasks, setTasks] = useState([]);
+  const { getTasks, updateTask, loading, error } = useTaskApi();
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [taskCount, setTaskCount] = useState(0);
+  const [updatingTaskIds, setUpdatingTaskIds] = useState<Set<string>>(new Set());
 
+  // タスク一覧を取得
   useEffect(() => {
     const fetchTasks = async () => {
+      if (!familyId) return;
+
       const response = await getTasks(familyId);
       if (response) {
         setTasks(response.tasks);
         setTaskCount(response.total);
       }
     };
+
     fetchTasks();
   }, [familyId, getTasks]);
 
-  if (loading) {
+  // タスクの完了状態を切り替え
+  const toggleTaskComplete = async (task: Task) => {
+    // 更新中なら処理をスキップ
+    if (updatingTaskIds.has(task.id)) return;
+
+    // 新しい状態を定義
+    const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+
+    try {
+      // 更新中のタスクIDを追加
+      setUpdatingTaskIds(prev => new Set(prev).add(task.id));
+
+      // 楽観的UI更新（即座にUIを更新）
+      setTasks(currentTasks =>
+        currentTasks.map(t => (t.id === task.id ? { ...t, status: newStatus } : t)),
+      );
+
+      // APIを呼び出してバックエンドを更新
+      await updateTask(task.id, { status: newStatus });
+    } catch (err) {
+      console.error('タスク更新中にエラーが発生しました:', err);
+
+      // 失敗した場合は元の状態に戻す
+      setTasks(currentTasks =>
+        currentTasks.map(t => (t.id === task.id ? { ...t, status: task.status } : t)),
+      );
+    } finally {
+      // 更新中のタスクIDを削除
+      setUpdatingTaskIds(prev => {
+        const next = new Set(prev);
+        next.delete(task.id);
+        return next;
+      });
+    }
+  };
+
+  if (loading && tasks.length === 0) {
     return (
       <Card>
         <CardContent>読み込み中...</CardContent>
@@ -51,13 +93,8 @@ const TaskSummaryWidget = ({ familyId }: TaskSummaryWidgetProps) => {
     );
   }
 
-  // タスクの完了状態を切り替え
-  const toggleTaskComplete = (id: number) => {
-    setTasks(tasks.map(task => (task.id === id ? { ...task, completed: !task.completed } : task)));
-  };
-
   // 未完了タスクの数を取得
-  const pendingTasksCount = tasks.filter(task => !task.completed).length;
+  const pendingTasksCount = tasks.filter(task => task.status !== 'completed').length;
 
   return (
     <Card>
@@ -79,16 +116,21 @@ const TaskSummaryWidget = ({ familyId }: TaskSummaryWidgetProps) => {
           <List disablePadding>
             {tasks.map(task => (
               <ListItem key={task.id} disablePadding>
-                <ListItemButton onClick={() => toggleTaskComplete(task.id)} dense>
+                <ListItemButton
+                  onClick={() => toggleTaskComplete(task)}
+                  dense
+                  disabled={updatingTaskIds.has(task.id)}
+                >
                   <ListItemIcon>
-                    <Checkbox edge="start" checked={task.completed} disableRipple />
+                    <Checkbox edge="start" checked={task.status === 'completed'} disableRipple />
                   </ListItemIcon>
                   <ListItemText
                     primary={task.title}
                     primaryTypographyProps={{
-                      style: task.completed
-                        ? { textDecoration: 'line-through', color: 'gray' }
-                        : {},
+                      style:
+                        task.status === 'completed'
+                          ? { textDecoration: 'line-through', color: 'gray' }
+                          : {},
                     }}
                   />
                 </ListItemButton>
