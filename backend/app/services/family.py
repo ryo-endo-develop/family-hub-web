@@ -2,6 +2,7 @@ import uuid
 from typing import Optional, Tuple
 
 from fastapi import HTTPException, status
+from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.family import (
@@ -200,9 +201,14 @@ async def remove_family_member(
         )
 
     # メンバーを検索して削除
-    family_member = await db.get(
-        FamilyMember, {"user_id": target_user_id, "family_id": family_id}
+    stmt = select(FamilyMember).where(
+        and_(
+            FamilyMember.user_id == target_user_id,
+            FamilyMember.family_id == family_id
+        )
     )
+    result = await db.execute(stmt)
+    family_member = result.scalars().first()
 
     if not family_member:
         raise HTTPException(
