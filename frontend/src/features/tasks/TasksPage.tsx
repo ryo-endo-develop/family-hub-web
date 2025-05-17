@@ -1,4 +1,4 @@
-import { Box, Button, CircularProgress, Container, Typography, Alert, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import { Box, Button, CircularProgress, Container, Typography, Alert, ToggleButtonGroup, ToggleButton, Paper } from '@mui/material';
 import { Add as AddIcon, ViewList as ViewListIcon, AccountTree as AccountTreeIcon } from '@mui/icons-material';
 import { useCallback, useEffect, useState, useRef } from 'react';
 
@@ -238,27 +238,37 @@ const TasksPage = () => {
           </Alert>
         )}
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <TaskFilterPanel
-            filters={displayFilters}
-            onFilterChange={handleFilterChange}
-            disabled={loading}
-          />
-          
-          <ToggleButtonGroup
-            value={viewMode}
-            exclusive
-            onChange={handleViewModeChange}
-            aria-label="表示モード"
-            size="small"
-          >
-            <ToggleButton value="flat" aria-label="フラットビュー">
-              <ViewListIcon />
-            </ToggleButton>
-            <ToggleButton value="tree" aria-label="ツリービュー">
-              <AccountTreeIcon />
-            </ToggleButton>
-          </ToggleButtonGroup>
+        {/* フィルターと表示モード切替 */}
+        <Box sx={{ mb: 3 }}>
+          <Paper elevation={1} sx={{ p: 2, mb: 3 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center'
+            }}>
+              <TaskFilterPanel
+                filters={displayFilters}
+                onFilterChange={handleFilterChange}
+                disabled={loading}
+              />
+              
+              <ToggleButtonGroup
+                value={viewMode}
+                exclusive
+                onChange={handleViewModeChange}
+                aria-label="表示モード"
+                size="small"
+                sx={{ ml: 2 }}
+              >
+                <ToggleButton value="flat" aria-label="フラットビュー">
+                  <ViewListIcon />
+                </ToggleButton>
+                <ToggleButton value="tree" aria-label="ツリービュー">
+                  <AccountTreeIcon />
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+          </Paper>
         </Box>
       </Box>
 

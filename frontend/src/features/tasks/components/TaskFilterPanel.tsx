@@ -12,10 +12,11 @@ import {
   SelectChangeEvent,
   Switch,
   Typography,
+  Divider,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
-import { FilterList as FilterListIcon, Clear as ClearIcon } from '@mui/icons-material';
-import { useState } from 'react';
+import { FilterList as FilterListIcon } from '@mui/icons-material';
+import { useState, useEffect } from 'react';
 
 import { TaskFilter } from '../types';
 
@@ -90,26 +91,39 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
   };
 
   return (
-    <Paper elevation={1} sx={{ p: 2, mb: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <>
+      {/* ヘッダー部分 */}
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        mb: 2
+      }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <FilterListIcon sx={{ mr: 1, color: 'primary.main' }} />
           <Typography variant="h6">フィルター</Typography>
         </Box>
-        <Box>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Button
             size="small"
-            startIcon={<ClearIcon />}
             onClick={clearFilters}
-            sx={{ mr: 1 }}
+            sx={{ 
+              color: 'primary.main',
+              mr: 2,
+              fontWeight: 'normal'
+            }}
             disabled={disabled}
           >
             クリア
           </Button>
           <Button
+            variant="contained"
             size="small"
             onClick={toggleExpanded}
-            variant={expanded ? 'contained' : 'outlined'}
+            sx={{ 
+              borderRadius: '20px',
+              minWidth: '80px'
+            }}
             disabled={disabled}
           >
             {expanded ? '閉じる' : '開く'}
@@ -117,84 +131,163 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
         </Box>
       </Box>
 
+      {/* 区切り線 */}
+      <Divider sx={{ mb: 3 }} />
+
+      {/* 折りたたみ可能なフィルタコンテンツ */}
       <Collapse in={expanded}>
-        <Grid container spacing={2} sx={{ mt: 2 }}>
-          <Grid item xs={12} sm={6} md={4} lg={3}>
-            <FormControl fullWidth size="small">
-              <InputLabel id="status-label">ステータス</InputLabel>
-              <Select
-                labelId="status-label"
-                id="status-select"
-                value={filters.status || ''}
-                label="ステータス"
-                onChange={handleStatusChange}
-                displayEmpty
-                disabled={disabled}
-              >
-                <MenuItem value="">すべて</MenuItem>
-                <MenuItem value="pending">未着手</MenuItem>
-                <MenuItem value="in_progress">進行中</MenuItem>
-                <MenuItem value="completed">完了</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={4} lg={3}>
-            <FormControl fullWidth size="small">
-              <InputLabel id="priority-label">優先度</InputLabel>
-              <Select
-                labelId="priority-label"
-                id="priority-select"
-                value={filters.priority || ''}
-                label="優先度"
-                onChange={handlePriorityChange}
-                displayEmpty
-                disabled={disabled}
-              >
-                <MenuItem value="">すべて</MenuItem>
-                <MenuItem value="high">高</MenuItem>
-                <MenuItem value="medium">中</MenuItem>
-                <MenuItem value="low">低</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={4} lg={3}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={filters.is_routine || false}
-                  onChange={handleRoutineChange}
-                  name="is_routine"
+        <Box>
+          <Grid container spacing={3}>
+            {/* ステータス選択 */}
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth size="small">
+                <InputLabel 
+                  id="status-label"
+                  shrink={true} // ラベルを常に縮小表示
+                >
+                  ステータス
+                </InputLabel>
+                <Select
+                  labelId="status-label"
+                  id="status-select"
+                  value={filters.status || ''}
+                  label="ステータス"
+                  onChange={handleStatusChange}
+                  displayEmpty
                   disabled={disabled}
+                  renderValue={(selected) => {
+                    if (selected === '') {
+                      return <Typography sx={{ opacity: 0.6 }}>すべて</Typography>;
+                    }
+                    
+                    const statusLabels: Record<string, string> = {
+                      pending: '未着手',
+                      in_progress: '進行中',
+                      completed: '完了',
+                    };
+                    
+                    return statusLabels[selected as string] || selected;
+                  }}
+                  sx={{
+                    '& .MuiSelect-select': {
+                      paddingTop: '8px',
+                      paddingBottom: '8px',
+                    }
+                  }}
+                >
+                  <MenuItem value="">すべて</MenuItem>
+                  <MenuItem value="pending">未着手</MenuItem>
+                  <MenuItem value="in_progress">進行中</MenuItem>
+                  <MenuItem value="completed">完了</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {/* 優先度選択 */}
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth size="small">
+                <InputLabel 
+                  id="priority-label"
+                  shrink={true} // ラベルを常に縮小表示
+                >
+                  優先度
+                </InputLabel>
+                <Select
+                  labelId="priority-label"
+                  id="priority-select"
+                  value={filters.priority || ''}
+                  label="優先度"
+                  onChange={handlePriorityChange}
+                  displayEmpty
+                  disabled={disabled}
+                  renderValue={(selected) => {
+                    if (selected === '') {
+                      return <Typography sx={{ opacity: 0.6 }}>すべて</Typography>;
+                    }
+                    
+                    const priorityLabels: Record<string, string> = {
+                      high: '高',
+                      medium: '中',
+                      low: '低',
+                    };
+                    
+                    return priorityLabels[selected as string] || selected;
+                  }}
+                  sx={{
+                    '& .MuiSelect-select': {
+                      paddingTop: '8px',
+                      paddingBottom: '8px',
+                    }
+                  }}
+                >
+                  <MenuItem value="">すべて</MenuItem>
+                  <MenuItem value="high">高</MenuItem>
+                  <MenuItem value="medium">中</MenuItem>
+                  <MenuItem value="low">低</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+
+          <Grid container spacing={3} sx={{ mt: 1 }}>
+            {/* ルーティンタスク切り替え */}
+            <Grid item xs={12} md={4}>
+              <Box sx={{ 
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center'
+              }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={filters.is_routine || false}
+                      onChange={handleRoutineChange}
+                      name="is_routine"
+                      disabled={disabled}
+                    />
+                  }
+                  label="ルーティンタスクのみ"
                 />
-              }
-              label="ルーティンタスクのみ"
-            />
-          </Grid>
+              </Box>
+            </Grid>
 
-          <Grid item xs={12} sm={6} md={4} lg={3}>
-            <DatePicker
-              label="期限日（から）"
-              value={filters.due_after || null}
-              onChange={handleDueAfterChange}
-              slotProps={{ textField: { size: 'small', fullWidth: true, disabled: disabled } }}
-              disabled={disabled}
-            />
-          </Grid>
+            {/* 期限日（から） */}
+            <Grid item xs={12} md={4}>
+              <DatePicker
+                label="期限日（から）"
+                value={filters.due_after || null}
+                onChange={handleDueAfterChange}
+                slotProps={{ 
+                  textField: { 
+                    size: 'small', 
+                    fullWidth: true, 
+                    disabled: disabled,
+                  }
+                }}
+                disabled={disabled}
+              />
+            </Grid>
 
-          <Grid item xs={12} sm={6} md={4} lg={3}>
-            <DatePicker
-              label="期限日（まで）"
-              value={filters.due_before || null}
-              onChange={handleDueBeforeChange}
-              slotProps={{ textField: { size: 'small', fullWidth: true, disabled: disabled } }}
-              disabled={disabled}
-            />
+            {/* 期限日（まで） */}
+            <Grid item xs={12} md={4}>
+              <DatePicker
+                label="期限日（まで）"
+                value={filters.due_before || null}
+                onChange={handleDueBeforeChange}
+                slotProps={{ 
+                  textField: { 
+                    size: 'small', 
+                    fullWidth: true, 
+                    disabled: disabled,
+                  }
+                }}
+                disabled={disabled}
+              />
+            </Grid>
           </Grid>
-        </Grid>
+        </Box>
       </Collapse>
-    </Paper>
+    </>
   );
 };
 
