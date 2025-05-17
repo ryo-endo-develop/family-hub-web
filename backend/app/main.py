@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.db.session import SessionLocal
 from app.routers.api import api_router
 
 # FastAPIアプリケーションの作成
@@ -36,8 +37,18 @@ async def startup_event():
     """
     print(
         "アプリケーションが起動しました。データベーススキーマはAlembicで管理されます。"
-    )  # 必要であればログメッセージをここに追加
-    pass  # 他に起動時処理がなければ pass
+    )
+    
+    # ルーティンタスクのリセット処理を実行
+    try:
+        from app.services.routine_task import reset_completed_routine_tasks
+        
+        # DB接続を開始
+        async with SessionLocal() as db:
+            reset_count = await reset_completed_routine_tasks(db)
+            print(f"起動時に {reset_count} 件のルーティンタスクをリセットしました")
+    except Exception as e:
+        print(f"ルーティンタスクのリセット中にエラーが発生しました: {e}")
 
 
 @app.get("/")

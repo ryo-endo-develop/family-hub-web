@@ -3,7 +3,7 @@ import os
 from fastapi import APIRouter, HTTPException, Request, status
 
 from app.core.security import create_access_token
-from app.routers import auth, families, tags, tasks, users
+from app.routers import admin, auth, families, tags, tasks, users
 from app.schemas.common import Response
 from app.scripts.setup_demo_data import setup_demo_data
 
@@ -16,6 +16,7 @@ api_router.include_router(users.router, prefix="/users", tags=["users"])
 api_router.include_router(families.router, prefix="/families", tags=["families"])
 api_router.include_router(tasks.router, prefix="/tasks", tags=["tasks"])
 api_router.include_router(tags.router, prefix="/tags", tags=["tags"])
+api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
 
 
 # 開発用：デモデータセットアップエンドポイント
