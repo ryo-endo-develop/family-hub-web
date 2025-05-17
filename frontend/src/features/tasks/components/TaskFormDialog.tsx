@@ -13,15 +13,42 @@ import {
   Select,
   TextField,
   Alert,
+  CircularProgress,
+  Chip,
+  Box,
+  Avatar,
+  ListItemText,
+  ListItemAvatar,
+  Typography,
+  useTheme,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { useTaskApi } from '../../../api/hooks/useTaskApi';
-import { Task, TaskCreate, taskCreateSchema } from '../types';
+import { useFamilyApi } from '../../../api/hooks/useFamilyApi';
+import { useTagApi } from '../../../api/hooks/useTagApi';
+import { Task, TaskCreate, Tag, taskCreateSchema } from '../types';
 import { useAppSelector } from '../../../hooks/reduxHooks';
+
+// 家族メンバーの型
+interface FamilyMember {
+  id: string;
+  user_id: string;
+  family_id: string;
+  role: string;
+  is_admin: boolean;
+  joined_at: string;
+  user: {
+    id: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    avatar_url?: string;
+  };
+}
 
 interface TaskFormDialogProps {
   open: boolean;
@@ -30,14 +57,63 @@ interface TaskFormDialogProps {
   familyId: string;
 }
 
+// テーマに沿ったタグカラーパレット
+const themeColors = {
+  primary: {
+    light: '#7986cb',
+    main: '#3f51b5',
+    dark: '#303f9f',
+  },
+  secondary: {
+    light: '#ff4081',
+    main: '#f50057',
+    dark: '#c51162',
+  },
+  accent: {
+    light: '#4dd0e1',
+    main: '#00bcd4',
+    dark: '#0097a7',
+  },
+  success: {
+    light: '#81c784',
+    main: '#4caf50',
+    dark: '#388e3c',
+  },
+  warning: {
+    light: '#ffb74d',
+    main: '#ff9800',
+    dark: '#f57c00',
+  },
+  error: {
+    light: '#e57373',
+    main: '#f44336',
+    dark: '#d32f2f',
+  },
+  grey: {
+    light: '#e0e0e0',
+    main: '#9e9e9e',
+    dark: '#616161',
+  },
+};
+
 const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) => {
+  const theme = useTheme();
   const { user } = useAppSelector((state) => state.auth);
   const taskApi = useTaskApi();
+  const familyApi = useFamilyApi();
+  const tagApi = useTagApi();
+  
+  // 前回のダイアログオープン状態を追跡するref
+  const prevOpenRef = useRef(false);
+  
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(false);
 
   // React Hook Formの設定
-  const { control, handleSubmit, reset, formState: { errors } } = useForm<TaskCreate>({
+  const { control, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<TaskCreate>({
     resolver: zodResolver(taskCreateSchema),
     defaultValues: {
       title: '',
@@ -51,6 +127,74 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
       tag_ids: [],
     },
   });
+
+  // 選択中のタグIDを監視
+  const selectedTagIds = watch('tag_ids') || [];
+
+  // タグの色を取得するヘルパー関数
+  // タグごとに一貫した色を生成するためにIDを使用
+  const getTagColor = useCallback((tag: Tag, isSelected: boolean) => {
+    if (isSelected) {
+      return undefined; // 選択時はカラープロパティをそのまま使用
+    }
+
+    // タグに色が設定されている場合はそれを使用
+    if (tag.color) {
+      // 各カラーカテゴリとの距離を計算し、最も近い色を選ぶ
+      // 簡易実装として各タグに固有の色を割り当てる
+      const tagId = tag.id;
+      const colorSeed = tagId.charCodeAt(0) + tagId.charCodeAt(tagId.length - 1);
+      
+      // カラーパレットから6種類の色を選択
+      const colorKeys = ['primary', 'secondary', 'accent', 'success', 'warning', 'error'];
+      const selectedColor = colorKeys[colorSeed % colorKeys.length];
+      
+      // 明るさも3段階から選択
+      const shadeKeys = ['light', 'main', 'dark'];
+      const selectedShade = shadeKeys[(colorSeed >> 4) % shadeKeys.length];
+      
+      // @ts-ignore
+      return themeColors[selectedColor][selectedShade];
+    }
+    
+    // 色が未設定の場合はデフォルト色
+    return theme.palette.grey[300];
+  }, [theme]);
+
+  // 家族メンバーとタグを取得する関数
+  const fetchFamilyData = useCallback(async (familyId: string) => {
+    if (!familyId) return;
+    
+    setIsLoadingData(true);
+    try {
+      // 家族メンバーの取得
+      const membersResult = await familyApi.getFamilyMembers(familyId);
+      if (membersResult) {
+        setFamilyMembers(membersResult);
+      }
+      
+      // タグの取得
+      const tagsResult = await tagApi.getFamilyTags(familyId);
+      if (tagsResult) {
+        setTags(tagsResult);
+      }
+    } catch (err) {
+      console.error('家族データの取得に失敗しました:', err);
+    } finally {
+      setIsLoadingData(false);
+    }
+  }, []);  // 空の依存配列で、fetchFamilyData関数の再生成を防ぐ
+
+  // ダイアログが開かれた時にデータを取得
+  useEffect(() => {
+    // ダイアログの表示状態が変わった時だけ実行（openがfalseからtrueに変わった時）
+    if (open && !prevOpenRef.current && familyId) {
+      fetchFamilyData(familyId);
+    }
+    
+    // ダイアログの表示状態を更新
+    prevOpenRef.current = open;
+  }, [open, familyId, fetchFamilyData]);
 
   // 家族IDが変更されたらフォームの値を更新
   useEffect(() => {
@@ -162,6 +306,16 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
     onClose(false);
   };
 
+  // タグを選択/解除するハンドラ
+  const handleTagToggle = (tagId: string) => {
+    const currentTagIds = selectedTagIds || [];
+    const newTagIds = currentTagIds.includes(tagId)
+      ? currentTagIds.filter(id => id !== tagId)
+      : [...currentTagIds, tagId];
+    
+    setValue('tag_ids', newTagIds);
+  };
+
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -174,6 +328,12 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
             </Alert>
           )}
           
+          {isLoadingData && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
+              <CircularProgress size={24} />
+            </Box>
+          )}
+
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12}>
               <Controller
@@ -264,8 +424,6 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
                     value={field.value}
                     onChange={(newValue) => {
                       // nullまたはDateオブジェクトを確実に渡す
-                      console.log("日付選択された値:", newValue);
-                      console.log("日付型:", newValue ? typeof newValue : "null");
                       if (newValue && !(newValue instanceof Date)) {
                         try {
                           field.onChange(new Date(newValue));
@@ -306,12 +464,96 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
                 )}
               />
             </Grid>
-            
-            {/* 将来的にはタグ選択や担当者選択を追加 */}
+
+            {/* 担当者選択 */}
+            <Grid item xs={12}>
+              <Controller
+                name="assignee_id"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth>
+                    <InputLabel id="assignee-label">担当者</InputLabel>
+                    <Select
+                      {...field}
+                      labelId="assignee-label"
+                      label="担当者"
+                      value={field.value || ''}
+                      onChange={(e) => field.onChange(e.target.value === '' ? null : e.target.value)}
+                      disabled={familyMembers.length === 0}
+                    >
+                      <MenuItem value="">未割当</MenuItem>
+                      {familyMembers.map((member) => (
+                        <MenuItem key={member.user_id} value={member.user_id}>
+                          <ListItemAvatar sx={{ minWidth: 36 }}>
+                            <Avatar
+                              alt={`${member.user.first_name} ${member.user.last_name}`}
+                              src={member.user.avatar_url}
+                              sx={{ width: 24, height: 24, mr: 1 }}
+                            >
+                              {member.user.first_name[0]}
+                            </Avatar>
+                          </ListItemAvatar>
+                          <ListItemText primary={`${member.user.last_name} ${member.user.first_name}`} />
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+              />
+            </Grid>
+
+            {/* タグ選択 */}
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" gutterBottom>
+                タグ
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {tags.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary">
+                    利用可能なタグがありません
+                  </Typography>
+                ) : (
+                  tags.map((tag) => {
+                    const isSelected = selectedTagIds.includes(tag.id);
+                    const tagColor = getTagColor(tag, isSelected);
+                    
+                    return (
+                      <Chip
+                        key={tag.id}
+                        label={tag.name}
+                        onClick={() => handleTagToggle(tag.id)}
+                        color={isSelected ? "primary" : "default"}
+                        variant={isSelected ? "filled" : "outlined"}
+                        sx={{
+                          bgcolor: isSelected ? undefined : tagColor,
+                          borderColor: isSelected ? undefined : tagColor,
+                          color: isSelected ? undefined : 
+                                  // カラーパレットの暗い色の場合は白文字にする
+                                  tagColor && tagColor.toLowerCase().includes('dark') ? '#fff' : 'inherit',
+                          '&:hover': {
+                            bgcolor: isSelected ? undefined : 
+                                   tagColor ? `${tagColor}99` : undefined, // 透明度を追加
+                          },
+                        }}
+                      />
+                    );
+                  })
+                )}
+              </Box>
+            </Grid>
             
             {/* 家族IDフィールド（非表示） */}
             <Controller
               name="family_id"
+              control={control}
+              render={({ field }) => (
+                <input type="hidden" {...field} />
+              )}
+            />
+
+            {/* タグIDsフィールド（非表示） */}
+            <Controller
+              name="tag_ids"
               control={control}
               render={({ field }) => (
                 <input type="hidden" {...field} />
@@ -325,7 +567,7 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
           <Button
             type="submit"
             variant="contained"
-            disabled={submitting}
+            disabled={submitting || isLoadingData}
           >
             {submitting ? '保存中...' : (task ? '更新' : '作成')}
           </Button>
