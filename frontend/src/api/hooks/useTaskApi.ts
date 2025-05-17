@@ -250,16 +250,44 @@ export const useTaskApi = () => {
     setError(null);
 
     try {
+      console.log('updateTask called with:', task_id, task);
+      console.log('due_date before formatting:', task.due_date, typeof task.due_date);
+      
+      // 日付データの有効性チェック
+      let due_date = null;
+      if (task.due_date) {
+        if (task.due_date instanceof Date) {
+          // toISOStringがタイムゾーン付きのUTC日付に変換するので、日付部分だけを取得
+          due_date = task.due_date.toISOString().split('T')[0];
+        } else if (typeof task.due_date === 'string') {
+          // すでに文字列の場合はそのまま使用
+          due_date = task.due_date;
+        } else {
+          console.error('Unknown date format:', task.due_date);
+          due_date = null;
+        }
+      }
+      
       // 日付フォーマットの調整
       const formattedTask = {
         ...task,
-        due_date: task.due_date ? task.due_date.toISOString().split('T')[0] : null,
+        due_date,
       };
+      
+      console.log('Sending formatted task:', formattedTask);
 
       const response = await apiClient.put(`/tasks/${task_id}`, formattedTask);
       return response.data.data;
     } catch (err: any) {
       console.error('タスク更新エラー:', err);
+      // レスポンスの詳細をログ出力
+      if (err.response) {
+        console.error('Error response:', {
+          status: err.response.status,
+          headers: err.response.headers,
+          data: err.response.data
+        });
+      }
       const message = err.response?.data?.detail || 'タスクの更新に失敗しました';
       setError(message);
       return null;

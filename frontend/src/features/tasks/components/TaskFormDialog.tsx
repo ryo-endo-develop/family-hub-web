@@ -65,13 +65,22 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
   // タスク編集時にフォームの初期値を設定
   useEffect(() => {
     if (task) {
+      // due_dateの処理を改善
+      let dueDate = null;
+      if (task.due_date) {
+        // 文字列の場合はDateオブジェクトに変換
+        dueDate = typeof task.due_date === 'string' 
+          ? new Date(task.due_date) 
+          : task.due_date;
+      }
+
       reset({
         title: task.title,
         description: task.description || '',
         status: task.status,
         priority: task.priority,
         is_routine: task.is_routine,
-        due_date: task.due_date,
+        due_date: dueDate,
         family_id: task.family_id,
         assignee_id: task.assignee_id || null,
         tag_ids: task.tags.map(tag => tag.id),
@@ -101,12 +110,30 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
     // 念のため最新の家族IDを設定
     data.family_id = familyId;
     
+    // 日付形式のデバッグ出力
+    console.log("送信前のデータ:", data);
+    console.log("日付データ型:", data.due_date ? typeof data.due_date : "null");
+    console.log("日付値:", data.due_date);
+    
+    if (data.due_date && !(data.due_date instanceof Date)) {
+      console.error("エラー: due_dateがDate型ではありません");
+      // Date型に変換を試みる
+      try {
+        data.due_date = new Date(data.due_date);
+        console.log("変換後の日付:", data.due_date);
+      } catch (e) {
+        console.error("日付変換エラー:", e);
+        data.due_date = null; // 変換失敗時はヌルに設定
+      }
+    }
+    
     setSubmitting(true);
     setError(null);
     
     try {
       if (task) {
         // タスク更新
+        console.log(`タスク更新実行: ${task.id}`, data);
         const result = await taskApi.updateTask(task.id, data);
         if (!result && taskApi.error) {
           setError(taskApi.error);
@@ -235,7 +262,21 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
                   <DatePicker
                     label="期限日"
                     value={field.value}
-                    onChange={field.onChange}
+                    onChange={(newValue) => {
+                      // nullまたはDateオブジェクトを確実に渡す
+                      console.log("日付選択された値:", newValue);
+                      console.log("日付型:", newValue ? typeof newValue : "null");
+                      if (newValue && !(newValue instanceof Date)) {
+                        try {
+                          field.onChange(new Date(newValue));
+                        } catch (e) {
+                          console.error("日付変換エラー:", e);
+                          field.onChange(null);
+                        }
+                      } else {
+                        field.onChange(newValue);
+                      }
+                    }}
                     slotProps={{
                       textField: {
                         fullWidth: true,

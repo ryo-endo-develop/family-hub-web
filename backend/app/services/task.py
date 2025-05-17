@@ -2,7 +2,9 @@ import uuid
 from typing import Any, Dict, List, Tuple
 
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.crud.family import is_user_family_member
 from app.crud.task import (
@@ -154,11 +156,52 @@ async def update_task_for_user(
     """
     ユーザーがアクセス可能なタスクを更新
     """
-    # タスクへのアクセス権を確認
-    task = await get_task_for_user(db, task_id, user_id)
+    try:
+        # タスクへのアクセス権を確認
+        task = await get_task_for_user(db, task_id, user_id)
+        
+        # due_dateの処理
+        # タスク更新スキーマ自身でも日付のバリデーションと変換が行われるが
+        # ログ出力のためここでも実行
+        try:
+            data = task_update.model_dump(exclude_unset=True)
+            if "due_date" in data and data["due_date"] is not None:
+                print(f"Service layer due_date: {data['due_date']}, type: {type(data['due_date'])}")
+        except Exception as e:
+            print(f"Error processing due_date: {str(e)}")
 
-    # タスクを更新
-    return await update_task(db, task, task_update)
+        # タスクを更新
+        updated_task = await update_task(db, task, task_update)
+        print(f"Updated task: {updated_task.id}, has subtasks: {hasattr(updated_task, 'subtasks')}")
+        
+        # タスクの関連情報を明示的に選択的に読み込む
+        # これにより、非同期コンテキスト外でのアクセスを防止
+        # リレーションも含めて再取得
+        stmt = (
+            select(Task)
+            .options(
+                selectinload(Task.created_by),
+                selectinload(Task.assignee),
+                selectinload(Task.tags),
+                selectinload(Task.subtasks).selectinload(Task.tags),
+                selectinload(Task.subtasks).selectinload(Task.assignee),
+                selectinload(Task.subtasks).selectinload(Task.created_by),
+            )
+            .where(Task.id == updated_task.id)
+        )
+        result = await db.execute(stmt)
+        task_with_relations = result.unique().scalar_one_or_none()
+        
+        if task_with_relations is None:
+            print(f"Warning: Could not reload task with ID {updated_task.id}")
+            return updated_task
+            
+        return task_with_relations
+    except Exception as e:
+        print(f"Error in update_task_for_user: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise
 
 
 async def delete_task_for_user(

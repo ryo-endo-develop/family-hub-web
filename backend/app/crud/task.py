@@ -56,27 +56,74 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         """
         タスクを更新し、タグも更新する
         """
-        # 基本情報の更新
-        update_data = obj_in.model_dump(exclude_unset=True, exclude={"tag_ids"})
-        for field in update_data:
-            setattr(db_obj, field, update_data[field])
+        try:
+            # 基本情報の更新
+            update_data = obj_in.model_dump(exclude_unset=True, exclude={"tag_ids"})
+            
+            # 日付データのログ出力とチェック
+            if "due_date" in update_data:
+                print(f"Due date before processing: {update_data.get('due_date')}, type: {type(update_data.get('due_date'))}")
+                
+                # 日付が文字列としてきた場合は変換
+                if isinstance(update_data["due_date"], str):
+                    try:
+                        from datetime import datetime, date
+                        # ISO形式の日付文字列をdate型に変換
+                        dt = datetime.fromisoformat(update_data["due_date"].replace('Z', '+00:00'))
+                        update_data["due_date"] = dt.date()
+                        print(f"Converted date: {update_data['due_date']}")
+                    except Exception as e:
+                        print(f"Error converting date: {e}")
+                        # 変換に失敗した場合はNoneを設定
+                        update_data["due_date"] = None
+            
+            for field in update_data:
+                setattr(db_obj, field, update_data[field])
 
-        # タグが指定されている場合は更新
-        if obj_in.tag_ids is not None:
-            # タグが存在するか確認し、同じ家族のタグのみを関連付ける
-            tag_stmt = select(Tag).where(
-                and_(Tag.id.in_(obj_in.tag_ids), Tag.family_id == db_obj.family_id)
+            # タグが指定されている場合は更新
+            if obj_in.tag_ids is not None:
+                # タグが存在するか確認し、同じ家族のタグのみを関連付ける
+                tag_stmt = select(Tag).where(
+                    and_(Tag.id.in_(obj_in.tag_ids), Tag.family_id == db_obj.family_id)
+                )
+                tag_result = await db.execute(tag_stmt)
+                tags = tag_result.scalars().all()
+
+                # タグを更新
+                db_obj.tags = tags
+
+            # データベースに変更を保存
+            db.add(db_obj)
+            await db.commit()
+
+            # selectinloadで関連データを含め再取得
+            stmt = (
+                select(Task)
+                .options(
+                    selectinload(Task.tags),
+                    selectinload(Task.assignee),
+                    selectinload(Task.created_by),
+                    selectinload(Task.subtasks).selectinload(Task.tags),
+                    selectinload(Task.subtasks).selectinload(Task.assignee),
+                    selectinload(Task.subtasks).selectinload(Task.created_by),
+                )
+                .where(Task.id == db_obj.id)
             )
-            tag_result = await db.execute(tag_stmt)
-            tags = tag_result.scalars().all()
-
-            # タグを更新
-            db_obj.tags = tags
-
-        db.add(db_obj)
-        await db.commit()
-        await db.refresh(db_obj)
-        return db_obj
+            result = await db.execute(stmt)
+            updated_task = result.unique().scalar_one_or_none()
+            
+            # サブタスク属性がない場合は空リストを設定
+            if updated_task and not hasattr(updated_task, 'subtasks'):
+                updated_task.subtasks = []
+                
+            return updated_task
+        except Exception as e:
+            # エラー発生時はロールバック
+            await db.rollback()
+            print(f"Error in update_with_tags: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise
 
     async def get_multi_by_family(
         self,
@@ -192,11 +239,14 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                 selectinload(Task.created_by),
                 selectinload(Task.assignee),
                 selectinload(Task.tags),
+                selectinload(Task.subtasks).selectinload(Task.tags),
+                selectinload(Task.subtasks).selectinload(Task.assignee),
+                selectinload(Task.subtasks).selectinload(Task.created_by),
             )
             .where(Task.id == task_id)
         )
         result = await db.execute(stmt)
-        return result.scalars().first()
+        return result.unique().scalar_one_or_none()
 
 
 class CRUDTag(CRUDBase[Tag, TagCreate, TagUpdate]):
@@ -250,28 +300,21 @@ async def get_task_with_subtasks(
     """
     タスクとそのサブタスクを取得
     """
-    # まずタスク自体とその関連情報を取得
-    task = await get_task_with_relations(db, task_id)
-    if not task:
-        return None
-    
-    # 次にサブタスクを取得
-    subtasks_stmt = (
+    # タスクとサブタスクを含む関連情報を一度に取得
+    stmt = (
         select(Task)
         .options(
             selectinload(Task.created_by),
             selectinload(Task.assignee),
             selectinload(Task.tags),
+            selectinload(Task.subtasks).selectinload(Task.tags),
+            selectinload(Task.subtasks).selectinload(Task.assignee),
+            selectinload(Task.subtasks).selectinload(Task.created_by),
         )
-        .where(Task.parent_id == task_id)
+        .where(Task.id == task_id)
     )
-    subtasks_result = await db.execute(subtasks_stmt)
-    subtasks = subtasks_result.scalars().all()
-    
-    # サブタスクをセット
-    task.subtasks = subtasks
-    
-    return task
+    result = await db.execute(stmt)
+    return result.unique().scalar_one_or_none()
 
 
 async def get_root_tasks_by_family(
@@ -388,6 +431,11 @@ async def update_task(db: AsyncSession, db_task: Task, task_update: TaskUpdate) 
     """
     タスクを更新
     """
+    # レスポンス出力前にモデルの必要な属性を適切に設定
+    # サブタスクは空リストとして初期化
+    if not hasattr(db_task, "subtasks"):
+        db_task.subtasks = []
+
     return await task.update_with_tags(db, db_obj=db_task, obj_in=task_update)
 
 

@@ -53,16 +53,17 @@ class Task(Base):
     )
 
     # リレーションシップ
-    family: Mapped["Family"] = relationship("Family", back_populates="tasks")
+    family: Mapped["Family"] = relationship("Family", back_populates="tasks", lazy="selectin")
     assignee: Mapped[Optional["User"]] = relationship(
-        "User", foreign_keys=[assignee_id], back_populates="assigned_tasks"
+        "User", foreign_keys=[assignee_id], back_populates="assigned_tasks", lazy="selectin"
     )
     created_by: Mapped["User"] = relationship(
-        "User", foreign_keys=[created_by_id], back_populates="created_tasks"
+        "User", foreign_keys=[created_by_id], back_populates="created_tasks", lazy="selectin"
     )
     tags: Mapped[List["Tag"]] = relationship(
         secondary=task_tags,
         back_populates="tasks",
+        lazy="selectin",
     )
 
     # サブタスク関連のリレーションシップ
@@ -74,7 +75,7 @@ class Task(Base):
         back_populates="parent",
         cascade="all, delete-orphan",
         foreign_keys=[parent_id],
-        lazy="select",
+        lazy="selectin",  # eagerローディングに変更してパフォーマンスを改善
     )
 
 
@@ -89,10 +90,11 @@ class Tag(Base):
     )
 
     # リレーションシップ
-    family: Mapped["Family"] = relationship("Family", back_populates="tags")
+    family: Mapped["Family"] = relationship("Family", back_populates="tags", lazy="selectin")
     tasks: Mapped[List[Task]] = relationship(
         secondary=task_tags,
         back_populates="tags",
+        lazy="selectin",
     )
 
     __table_args__ = (UniqueConstraint("name", "family_id", name="uq_tag_name_family"),)

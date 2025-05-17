@@ -311,8 +311,27 @@ async def update_task(
     """
     タスクを更新
     """
-    task = await update_task_for_user(db, task_id, task_in, current_user.id)
-    return Response(data=task, message="タスクを更新しました")
+    try:
+        # リクエストデータのログ出力
+        print(f"Updating task {task_id}: {task_in.model_dump()}")
+        
+        # due_dateの型チェック
+        due_date = task_in.due_date
+        print(f"due_date value: {due_date}, type: {type(due_date)}")
+        
+        # タスクを更新
+        updated_task = await update_task_for_user(db, task_id, task_in, current_user.id)
+        
+        # レスポンスを返す (モデルを直接使用)
+        # SQLAlchemyモデルをシリアライズ可能な状態にしているので、直接使用
+        return Response(data=updated_task, message="タスクを更新しました")
+    except Exception as e:
+        print(f"Error updating task: {str(e)}")
+        # エラースタックトレースの出力
+        import traceback
+        traceback.print_exc()
+        # エラーを再発生させる
+        raise
 
 
 @router.delete("/{task_id}", response_model=Response[TaskResponse])
