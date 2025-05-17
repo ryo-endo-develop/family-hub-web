@@ -51,6 +51,18 @@ class TaskCreate(TaskBase):
     tag_ids: Optional[List[uuid.UUID]] = None
 
 
+# サブタスク作成用スキーマ（family_idがない）
+class SubtaskCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    due_date: Optional[date] = None
+    status: str = "pending"
+    priority: str = "medium"
+    is_routine: bool = False
+    assignee_id: Optional[uuid.UUID] = None
+    tag_ids: Optional[List[uuid.UUID]] = None
+
+
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
@@ -128,7 +140,7 @@ class TaskResponse(BaseModel):
 
 # サブタスクの一括作成用のモデル
 class BulkSubtaskCreate(BaseModel):
-    subtasks: List[TaskCreate]
+    subtasks: List[SubtaskCreate]
 
 # タスク一覧レスポンスモデル
 class TaskListResponse(BaseModel):

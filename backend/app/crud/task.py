@@ -250,20 +250,28 @@ async def get_task_with_subtasks(
     """
     タスクとそのサブタスクを取得
     """
-    stmt = (
+    # まずタスク自体とその関連情報を取得
+    task = await get_task_with_relations(db, task_id)
+    if not task:
+        return None
+    
+    # 次にサブタスクを取得
+    subtasks_stmt = (
         select(Task)
         .options(
             selectinload(Task.created_by),
             selectinload(Task.assignee),
             selectinload(Task.tags),
-            selectinload(Task.subtasks).selectinload(Task.tags),
-            selectinload(Task.subtasks).selectinload(Task.assignee),
-            selectinload(Task.subtasks).selectinload(Task.created_by),
         )
-        .where(Task.id == task_id)
+        .where(Task.parent_id == task_id)
     )
-    result = await db.execute(stmt)
-    return result.scalars().first()
+    subtasks_result = await db.execute(subtasks_stmt)
+    subtasks = subtasks_result.scalars().all()
+    
+    # サブタスクをセット
+    task.subtasks = subtasks
+    
+    return task
 
 
 async def get_root_tasks_by_family(

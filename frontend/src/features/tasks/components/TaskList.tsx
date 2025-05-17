@@ -18,6 +18,7 @@ import {
   Edit as EditIcon,
   MoreHoriz as MoreHorizIcon,
   PriorityHigh as PriorityHighIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
@@ -28,6 +29,7 @@ interface TaskListProps {
   tasks: Task[];
   onEdit: (task: Task) => void;
   onDelete: (taskId: string) => void;
+  onAddSubtask?: (task: Task) => void; // サブタスク追加ハンドラ (オプショナル)
   total: number;
   page: number;
   rowsPerPage: number;
@@ -39,6 +41,7 @@ const TaskList = ({
   tasks,
   onEdit,
   onDelete,
+  onAddSubtask,
   total,
   page,
   rowsPerPage,
@@ -172,6 +175,14 @@ const TaskList = ({
                         sx={{ ml: 1 }}
                       />
                     )}
+                    {task.parent_id && (
+                      <Chip
+                        label="サブタスク"
+                        size="small"
+                        color="info"
+                        sx={{ ml: 1 }}
+                      />
+                    )}
                   </TableCell>
                   <TableCell>{getStatusDisplay(task.status)}</TableCell>
                   <TableCell>{getPriorityDisplay(task.priority)}</TableCell>
@@ -198,6 +209,16 @@ const TaskList = ({
                     </Box>
                   </TableCell>
                   <TableCell align="right">
+                    {onAddSubtask && (
+                      <IconButton
+                        aria-label="サブタスク追加"
+                        size="small"
+                        onClick={() => onAddSubtask(task)}
+                        color="primary"
+                      >
+                        <AddIcon fontSize="small" />
+                      </IconButton>
+                    )}
                     <IconButton
                       aria-label="編集"
                       size="small"

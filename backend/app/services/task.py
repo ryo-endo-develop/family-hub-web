@@ -12,13 +12,14 @@ from app.crud.task import (
     delete_task,
     get_family_tags,
     get_family_tasks,
+    get_task_with_relations,
     get_task_with_subtasks,
     get_root_tasks_by_family,
     count_root_tasks_by_family,
     update_task,
 )
 from app.models.task import Tag, Task
-from app.schemas.task import TagCreate, TaskCreate, TaskUpdate
+from app.schemas.task import TagCreate, TaskCreate, TaskUpdate, SubtaskCreate
 
 
 async def check_family_membership(
@@ -91,7 +92,7 @@ async def get_task_with_subtasks_for_user(
 
 
 async def create_subtask_for_user(
-    db: AsyncSession, parent_id: uuid.UUID, task_in: TaskCreate, user_id: uuid.UUID
+    db: AsyncSession, parent_id: uuid.UUID, task_in: SubtaskCreate, user_id: uuid.UUID
 ) -> Task:
     """
     ユーザーがサブタスクを作成
@@ -99,7 +100,7 @@ async def create_subtask_for_user(
     # 親タスクへのアクセス権を確認
     parent_task = await get_task_for_user(db, parent_id, user_id)
     
-    # 親タスクの家族IDをサブタスクにも設定
+    # サブタスク用に親タスクの家族IDを設定してTaskCreateを作成
     task_in_data = task_in.model_dump()
     task_data = TaskCreate(
         **task_in_data,
@@ -107,12 +108,17 @@ async def create_subtask_for_user(
         family_id=parent_task.family_id
     )
     
-    # サブタスクを作成
-    return await create_task(db, task_data, user_id)
+    # サブタスクを作成する
+    created_task = await create_task(db, task_data, user_id)
+    
+    # 作成したタスクの関連情報を取得する
+    # サブタスクは必要ない
+    task_with_relations = await get_task_with_relations(db, task_id=created_task.id)
+    return task_with_relations
 
 
 async def create_bulk_subtasks_for_user(
-    db: AsyncSession, parent_id: uuid.UUID, subtasks_in: List[TaskCreate], user_id: uuid.UUID
+    db: AsyncSession, parent_id: uuid.UUID, subtasks_in: List[SubtaskCreate], user_id: uuid.UUID
 ) -> List[Task]:
     """
     ユーザーが複数のサブタスクを一括作成
@@ -132,8 +138,12 @@ async def create_bulk_subtasks_for_user(
         )
         
         # サブタスクを作成
-        subtask = await create_task(db, task_data, user_id)
-        created_subtasks.append(subtask)
+        created_task = await create_task(db, task_data, user_id)
+        
+        # 作成したタスクの関連情報を取得する
+        # サブタスクは必要ない
+        complete_task = await get_task_with_relations(db, task_id=created_task.id)
+        created_subtasks.append(complete_task)
     
     return created_subtasks
 

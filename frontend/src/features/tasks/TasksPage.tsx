@@ -1,17 +1,22 @@
-import { Box, Button, CircularProgress, Container, Typography, Alert } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import { Box, Button, CircularProgress, Container, Typography, Alert, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import { Add as AddIcon, ViewList as ViewListIcon, AccountTree as AccountTreeIcon } from '@mui/icons-material';
 import { useCallback, useEffect, useState, useRef } from 'react';
 
 import { useAppSelector } from '../../hooks/reduxHooks';
 import { useTaskApi } from '../../api/hooks/useTaskApi';
 import { Task, TaskFilter } from './types';
 import TaskList from './components/TaskList';
+import TaskListWithSubtasks from './components/subtasks/TaskListWithSubtasks';
 import TaskFilterPanel from './components/TaskFilterPanel';
 import TaskFormDialog from './components/TaskFormDialog';
+import SubtaskFormDialog from './components/subtasks/SubtaskFormDialog';
+
+// 表示モード
+type ViewMode = 'flat' | 'tree';
 
 const TasksPage = () => {
   const { currentFamily } = useAppSelector(state => state.auth);
-  const { getTasks, loading: apiLoading, error: apiError } = useTaskApi();
+  const { getTasks, getRootTasks, deleteTask, loading: apiLoading, error: apiError } = useTaskApi();
 
   // フラグと状態の管理
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -19,7 +24,12 @@ const TasksPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isSubtaskFormOpen, setIsSubtaskFormOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [parentTask, setParentTask] = useState<Task | null>(null);
+  
+  // 表示モード（フラットビュー or ツリービュー）
+  const [viewMode, setViewMode] = useState<ViewMode>('flat');
 
   // フィルターを依存配列に含めないようにrefで管理
   const filtersRef = useRef<TaskFilter>({
@@ -51,9 +61,18 @@ const TasksPage = () => {
       setLoading(true);
       setError(null);
 
-      console.log('タスク一覧取得開始:', filtersRef.current);
+      console.log(`タスク一覧取得開始 (${viewMode}ビュー):`, filtersRef.current);
 
-      const response = await getTasks(currentFamily.id, filtersRef.current);
+      let response;
+      
+      // 表示モードに応じてAPIを切り替え
+      if (viewMode === 'tree') {
+        // ツリービュー - ルートタスクのみ取得（サブタスクは階層的に表示）
+        response = await getRootTasks(currentFamily.id, filtersRef.current);
+      } else {
+        // フラットビュー - 全タスクをフラットに表示
+        response = await getTasks(currentFamily.id, filtersRef.current);
+      }
 
       if (response) {
         setTasks(response.tasks || []);
@@ -68,14 +87,14 @@ const TasksPage = () => {
       setLoading(false);
       isFetchingRef.current = false;
     }
-  }, [currentFamily.id, getTasks]);
+  }, [currentFamily.id, getTasks, getRootTasks, viewMode, apiError]);
 
-  // 家族IDが変わった時だけタスク一覧を取得
+  // 家族IDが変わった時とビューモードが変わった時にタスク一覧を取得
   useEffect(() => {
     if (currentFamily.id) {
       fetchTasks();
     }
-  }, [currentFamily.id, fetchTasks]);
+  }, [currentFamily.id, viewMode, fetchTasks]);
 
   // タスク作成ダイアログを開く
   const handleOpenCreateDialog = () => {
@@ -89,10 +108,16 @@ const TasksPage = () => {
     setIsFormOpen(true);
   };
 
+  // サブタスク作成ダイアログを開く
+  const handleOpenSubtaskDialog = (parentTask: Task) => {
+    setParentTask(parentTask);
+    setIsSubtaskFormOpen(true);
+  };
+
   // タスク削除ハンドラ
   const handleDeleteTask = async (taskId: string) => {
     // 削除後、データを再取得する処理は子コンポーネントで実装
-    const success = await useTaskApi().deleteTask(taskId);
+    const success = await deleteTask(taskId);
     if (success) {
       fetchTasks();
     }
@@ -103,6 +128,21 @@ const TasksPage = () => {
     setIsFormOpen(false);
     if (refreshNeeded) {
       fetchTasks();
+    }
+  };
+
+  // サブタスク作成完了ハンドラ
+  const handleSubtaskFormClose = (refreshNeeded: boolean) => {
+    setIsSubtaskFormOpen(false);
+    if (refreshNeeded) {
+      fetchTasks();
+    }
+  };
+
+  // 表示モード変更ハンドラ
+  const handleViewModeChange = (_: React.MouseEvent<HTMLElement>, newMode: ViewMode | null) => {
+    if (newMode) {
+      setViewMode(newMode);
     }
   };
 
@@ -198,22 +238,52 @@ const TasksPage = () => {
           </Alert>
         )}
 
-        <TaskFilterPanel
-          filters={displayFilters}
-          onFilterChange={handleFilterChange}
-          disabled={loading}
-        />
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <TaskFilterPanel
+            filters={displayFilters}
+            onFilterChange={handleFilterChange}
+            disabled={loading}
+          />
+          
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={handleViewModeChange}
+            aria-label="表示モード"
+            size="small"
+          >
+            <ToggleButton value="flat" aria-label="フラットビュー">
+              <ViewListIcon />
+            </ToggleButton>
+            <ToggleButton value="tree" aria-label="ツリービュー">
+              <AccountTreeIcon />
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
       </Box>
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
           <CircularProgress />
         </Box>
+      ) : viewMode === 'tree' ? (
+        <TaskListWithSubtasks
+          tasks={tasks}
+          onEdit={handleOpenEditDialog}
+          onDelete={handleDeleteTask}
+          onAddSubtask={handleOpenSubtaskDialog}
+          total={totalTasks}
+          page={Math.floor(filtersRef.current.skip / filtersRef.current.limit)}
+          rowsPerPage={filtersRef.current.limit}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
+        />
       ) : (
         <TaskList
           tasks={tasks}
           onEdit={handleOpenEditDialog}
           onDelete={handleDeleteTask}
+          onAddSubtask={handleOpenSubtaskDialog}
           total={totalTasks}
           page={Math.floor(filtersRef.current.skip / filtersRef.current.limit)}
           rowsPerPage={filtersRef.current.limit}
@@ -228,6 +298,14 @@ const TasksPage = () => {
           task={selectedTask}
           onClose={handleTaskFormClose}
           familyId={currentFamily.id}
+        />
+      )}
+
+      {isSubtaskFormOpen && parentTask && (
+        <SubtaskFormDialog
+          open={isSubtaskFormOpen}
+          parentTask={parentTask}
+          onClose={handleSubtaskFormClose}
         />
       )}
     </Container>

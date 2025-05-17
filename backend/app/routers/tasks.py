@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_current_user, get_db
 from app.models.user import User
 from app.schemas.common import PaginatedResponse, Response
-from app.schemas.task import BulkSubtaskCreate, TaskCreate, TaskResponse, TaskUpdate
+from app.schemas.task import BulkSubtaskCreate, SubtaskCreate, TaskCreate, TaskResponse, TaskUpdate
 from app.services.task import (
     create_task_for_family,
     delete_task_for_user,
@@ -143,7 +143,7 @@ async def read_task_with_subtasks(
 )
 async def create_subtask(
     task_id: uuid.UUID,
-    subtask_in: TaskCreate,
+    subtask_in: SubtaskCreate,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
@@ -151,7 +151,64 @@ async def create_subtask(
     タスクのサブタスクを作成
     """
     subtask = await create_subtask_for_user(db, task_id, subtask_in, current_user.id)
-    return Response(data=subtask, message="サブタスクを作成しました")
+    
+    # SQLAlchemyモデルを載せずに明示的にディクショナリに変換
+    # サブタスクも載せ
+    subtask_dict = {
+        "id": subtask.id,
+        "title": subtask.title,
+        "description": subtask.description,
+        "due_date": subtask.due_date,
+        "status": subtask.status,
+        "priority": subtask.priority,
+        "is_routine": subtask.is_routine,
+        "family_id": subtask.family_id,
+        "parent_id": subtask.parent_id,
+        "assignee_id": subtask.assignee_id,
+        "created_by_id": subtask.created_by_id,
+        "created_at": subtask.created_at,
+        "updated_at": subtask.updated_at,
+        "subtasks": [],
+    }
+    
+    # assigneeやcreated_byも同様にディクショナリに
+    if subtask.assignee:
+        subtask_dict["assignee"] = {
+            "id": subtask.assignee.id,
+            "first_name": subtask.assignee.first_name,
+            "last_name": subtask.assignee.last_name,
+            "avatar_url": subtask.assignee.avatar_url,
+            "email": subtask.assignee.email,
+            "is_active": subtask.assignee.is_active,
+            "created_at": subtask.assignee.created_at,
+            "updated_at": subtask.assignee.updated_at
+        }
+    else:
+        subtask_dict["assignee"] = None
+        
+    subtask_dict["created_by"] = {
+        "id": subtask.created_by.id,
+        "first_name": subtask.created_by.first_name,
+        "last_name": subtask.created_by.last_name,
+        "avatar_url": subtask.created_by.avatar_url,
+        "email": subtask.created_by.email,
+        "is_active": subtask.created_by.is_active,
+        "created_at": subtask.created_by.created_at,
+        "updated_at": subtask.created_by.updated_at
+    }
+    
+    # タグもディクショナリに
+    subtask_dict["tags"] = [
+        {
+            "id": tag.id,
+            "name": tag.name,
+            "color": tag.color,
+            "family_id": tag.family_id
+        }
+        for tag in subtask.tags
+    ]
+    
+    return Response(data=subtask_dict, message="サブタスクを作成しました")
 
 
 @router.post(
@@ -169,7 +226,66 @@ async def create_bulk_subtasks(
     タスクのサブタスクを一括作成
     """
     subtasks = await create_bulk_subtasks_for_user(db, task_id, bulk_data.subtasks, current_user.id)
-    return Response(data=subtasks, message="複数のサブタスクを作成しました")
+    
+    # SQLAlchemyモデルを載せずに明示的にディクショナリに変換
+    subtasks_dict = []
+    for subtask in subtasks:
+        subtask_dict = {
+            "id": subtask.id,
+            "title": subtask.title,
+            "description": subtask.description,
+            "due_date": subtask.due_date,
+            "status": subtask.status,
+            "priority": subtask.priority,
+            "is_routine": subtask.is_routine,
+            "family_id": subtask.family_id,
+            "parent_id": subtask.parent_id,
+            "assignee_id": subtask.assignee_id,
+            "created_by_id": subtask.created_by_id,
+            "created_at": subtask.created_at,
+            "updated_at": subtask.updated_at,
+            "subtasks": [],
+        }
+        
+        # assigneeやcreated_byも同様にディクショナリに
+        if subtask.assignee:
+            subtask_dict["assignee"] = {
+                "id": subtask.assignee.id,
+                "first_name": subtask.assignee.first_name,
+                "last_name": subtask.assignee.last_name,
+                "avatar_url": subtask.assignee.avatar_url,
+                "email": subtask.assignee.email,
+                "is_active": subtask.assignee.is_active,
+                "created_at": subtask.assignee.created_at,
+                "updated_at": subtask.assignee.updated_at
+            }
+        else:
+            subtask_dict["assignee"] = None
+            
+        subtask_dict["created_by"] = {
+            "id": subtask.created_by.id,
+            "first_name": subtask.created_by.first_name,
+            "last_name": subtask.created_by.last_name,
+            "avatar_url": subtask.created_by.avatar_url,
+            "email": subtask.created_by.email,
+            "is_active": subtask.created_by.is_active,
+            "created_at": subtask.created_by.created_at,
+            "updated_at": subtask.created_by.updated_at
+        }
+        
+        # タグもディクショナリに
+        subtask_dict["tags"] = [
+            {
+                "id": tag.id,
+                "name": tag.name,
+                "color": tag.color,
+                "family_id": tag.family_id
+            }
+            for tag in subtask.tags
+        ]
+        subtasks_dict.append(subtask_dict)
+    
+    return Response(data=subtasks_dict, message="複数のサブタスクを作成しました")
 
 
 @router.get("/{task_id}", response_model=Response[TaskResponse])
