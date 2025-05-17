@@ -3,6 +3,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import RedirectResponse
 
 from app.core.config import settings
 from app.db.session import SessionLocal
@@ -27,6 +28,15 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         
         return response
 
+# HTTPS強制リダイレクトミドルウェア（本番環境のみ）
+class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        # 本番環境かつHTTPでのアクセスの場合、HTTPSにリダイレクト
+        if not settings.DEBUG and request.url.scheme == "http":
+            https_url = str(request.url).replace("http://", "https://", 1)
+            return RedirectResponse(https_url, status_code=301)
+        return await call_next(request)
+
 # FastAPIアプリケーションの作成
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -36,6 +46,10 @@ app = FastAPI(
 )
 
 # 各種ミドルウェアを登録
+# HTTPSリダイレクトミドルウェア（最初に登録するのが重要）
+if not settings.DEBUG:
+    app.add_middleware(HTTPSRedirectMiddleware)
+
 # セキュリティヘッダーミドルウェア
 app.add_middleware(SecurityHeadersMiddleware)
 

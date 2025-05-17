@@ -1,4 +1,4 @@
-.PHONY: up down build logs setup-demo test format format-check lint lint-fix lint-check quality-check
+.PHONY: up down build logs setup-demo test format format-check lint lint-fix lint-check quality-check security
 
 up:
 	docker compose up -d
@@ -32,3 +32,6 @@ lint-check:
 
 quality-check:
 	docker compose exec api sh -c "ruff format ./app --check && ruff check ./app"
+
+security:
+	./scan_vulnerabilities.sh
