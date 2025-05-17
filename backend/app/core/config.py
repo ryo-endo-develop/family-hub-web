@@ -6,11 +6,14 @@ from pydantic import AnyHttpUrl, ConfigDict, PostgresDsn, field_validator
 from pydantic_settings import BaseSettings
 
 # 環境に応じたログレベルの設定
-log_level = logging.DEBUG if os.getenv("DEBUG", "False").lower() in ("true", "1", "t") else logging.INFO
+log_level = (
+    logging.DEBUG
+    if os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
+    else logging.INFO
+)
 
 logging.basicConfig(
-    level=log_level,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=log_level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 
@@ -18,7 +21,9 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = os.environ.get("SECRET_KEY")
     if not SECRET_KEY:
-        raise ValueError("SECRET_KEY環境変数が設定されていません。本番環境では必須です。")
+        raise ValueError(
+            "SECRET_KEY環境変数が設定されていません。本番環境では必須です。"
+        )
     ALGORITHM: str = "HS256"
     # アクセストークンの有効期限を30分に設定
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
@@ -29,12 +34,18 @@ class Settings(BaseSettings):
 
     # デフォルトタグ設定
     DEFAULT_TAGS: list = [
-        {"name": "重要", "color": "#f44336"},  # 赤
-        {"name": "買い物", "color": "#4caf50"},  # 緑
-        {"name": "家事", "color": "#3f51b5"},  # 青
-        {"name": "育児", "color": "#ff9800"},  # 橙
-        {"name": "仕事", "color": "#9c27b0"},  # 紫
-        {"name": "趣味", "color": "#00bcd4"},  # 水色
+        {"name": "重要", "color": "#DC3545"},  # 赤系 (テーマの error 色)
+        {"name": "買い物", "color": "#F5A623"},  # オレンジ系 (テーマの accent 色)
+        {"name": "家事", "color": "#50E3C2"},  # ティール系 (テーマの secondary 色)
+        {"name": "育児", "color": "#4A90E2"},  # 青系 (テーマの primary 色)
+        {
+            "name": "仕事",
+            "color": "#6C757D",
+        },  # グレー系
+        {
+            "name": "趣味",
+            "color": "#79A6DC",
+        },  # 明るめの青
     ]
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")

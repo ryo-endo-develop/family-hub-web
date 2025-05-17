@@ -164,17 +164,6 @@ Swagger UI で API を操作する際の基本的な手順：
      -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
    ```
 
-### 将来的な OIDC 認証への移行
-
-現在は JWT ベースの単純な認証を使用していますが、将来的には OIDC (OpenID Connect) 認証に移行することを計画しています。OIDC 認証に移行することで、以下のメリットがあります：
-
-- Single Sign-On (SSO) 対応
-- より強固な認証フロー
-- 外部 ID プロバイダ（Google、GitHub、Microsoft など）との連携
-- マルチファクタ認証のサポート
-
-OIDC 実装時には、本 README も更新する予定です。
-
 ### ローカル開発環境のセットアップ（Docker なしの場合）
 
 1. リポジトリをクローン:
@@ -238,45 +227,6 @@ uvicorn app.main:app --reload
 }
 ```
 
-### 認証
-
-- `POST /api/v1/auth/register` - ユーザー登録
-- `POST /api/v1/auth/login` - ログイン（JWT 取得）
-
-### ユーザー
-
-- `GET /api/v1/users/me` - 自分のプロフィール取得
-- `PUT /api/v1/users/me` - 自分のプロフィール更新
-
-### 家族
-
-- `POST /api/v1/families` - 家族作成
-- `GET /api/v1/families` - 自分の家族一覧取得
-- `GET /api/v1/families/{family_id}` - 家族詳細取得
-- `PUT /api/v1/families/{family_id}` - 家族情報更新
-- `POST /api/v1/families/{family_id}/members` - 家族メンバー追加
-- `GET /api/v1/families/{family_id}/members` - 家族メンバー一覧取得
-- `DELETE /api/v1/families/{family_id}/members/{user_id}` - 家族メンバー削除
-
-### タスク
-
-- `POST /api/v1/tasks` - タスク作成
-- `GET /api/v1/tasks` - タスク一覧取得（フィルタリング可能）
-- `GET /api/v1/tasks/{task_id}` - タスク詳細取得
-- `PUT /api/v1/tasks/{task_id}` - タスク更新
-- `DELETE /api/v1/tasks/{task_id}` - タスク削除
-
-### タグ
-
-- `POST /api/v1/tags` - タグ作成
-- `GET /api/v1/tags/family/{family_id}` - 家族のタグ一覧取得
-- `PUT /api/v1/tags/{tag_id}` - タグ更新
-- `DELETE /api/v1/tags/{tag_id}` - タグ削除
-
-### 開発用
-
-- `POST /api/v1/setup-demo` - デモデータのセットアップ
-
 ## 開発ガイドライン
 
 - コード変更前にテストを実行し、すべてのテストが通ることを確認してください
@@ -310,7 +260,7 @@ docker compose exec api sh -c "ruff format ./app --check && ruff check ./app"
 docker compose exec api sh -c "ruff format ./app && ruff check ./app --fix"
 ```
 
-#### Makefile を使用する場合（推奨）
+#### Makefile を使用する場合
 
 ```bash
 # コードフォーマット（自動修正）
@@ -344,7 +294,7 @@ docker compose exec -e TESTING=True api pytest tests/test_tasks.py
 docker compose exec -e TESTING=True api pytest --cov=app
 ```
 
-#### Makefile を使用する場合（推奨）
+#### Makefile を使用する場合
 
 ```bash
 # すべてのテストを実行
@@ -353,14 +303,14 @@ make test
 
 ## セキュリティとデプロイ
 
-SyncFamは、セキュリティを守りつつ簡単にデプロイできるよう設計されています。デプロイ前には必ず以下のセキュリティ毎項チェックを行ってください。
+SyncFam は、セキュリティを守りつつ簡単にデプロイできるよう設計されています。デプロイ前には必ず以下のセキュリティ毎項チェックを行ってください。
 
 ### 本番環境のセキュリティ機能
 
-SyncFamには以下のセキュリティ機能が実装されています：
+SyncFam には以下のセキュリティ機能が実装されています：
 
-- **HTTPS強制リダイレクト** - `DEBUG=False` の本番環境で自動的にHTTPS強制
-- **セキュリティヘッダー** - CSP, HSTS, X-Content-Type-Optionsなどの主要セキュリティヘッダー
+- **HTTPS 強制リダイレクト** - `DEBUG=False` の本番環境で自動的に HTTPS 強制
+- **セキュリティヘッダー** - CSP, HSTS, X-Content-Type-Options などの主要セキュリティヘッダー
 - **センシティブ情報のマスキング** - ログ内のパスワード等の機密情報の自動マスキング
 - **コード品質管理** - コードリントとフォーマットの定期的なチェック
 - **パッケージ脆弱性スキャン** - パッケージの自動スキャンとアップデート
@@ -381,6 +331,7 @@ make security
 ```
 
 このスクリプトは以下の処理を実行します：
+
 - `safety` と `pip-audit` ツールをインストール
 - `requirements.txt` の脆弱性をスキャン
 - インストール済みパッケージの脆弱性をスキャン
@@ -404,29 +355,30 @@ $ make security
 5. バックアップ: データベースバックアップが設定されていることを確認
 ```
 
-### RenderやVercelでのデプロイ
+### Render や Vercel でのデプロイ
 
-RenderやVercel等のクラウドプラットフォームへのデプロイ手順については、[セキュリティとデプロイガイド](./docs/security_and_deployment.md)を参照してください。
+Render や Vercel 等のクラウドプラットフォームへのデプロイ手順については、[セキュリティとデプロイガイド](./docs/security_and_deployment.md)を参照してください。
 
-#### Renderへのデプロイ手順概要
+#### Render へのデプロイ手順概要
 
-1. Render.comでアカウントを作成
-2. GitHubリポジトリを連携
-3. Web Serviceとしてプロジェクトをデプロイするよう設定
+1. Render.com でアカウントを作成
+2. GitHub リポジトリを連携
+3. Web Service としてプロジェクトをデプロイするよう設定
 4. 環境変数を設定（特に `DEBUG=False` と `SECRET_KEY` は必須）
 5. デプロイ完了後にデータベースマイグレーションを実行
 
 詳細な手順と環境変数の設定例は[セキュリティとデプロイガイド](./docs/security_and_deployment.md)を参照してください。
 
-#### Vercelでフロントエンドをデプロイする場合
+#### Vercel でフロントエンドをデプロイする場合
 
-1. Vercel.comでアカウントを作成
-2. GitHubリポジトリを連携
-3. Framework PresetをViteに設定
+1. Vercel.com でアカウントを作成
+2. GitHub リポジトリを連携
+3. Framework Preset を Vite に設定
 4. ビルド設定と環境変数を構成
-5. `VITE_API_BASE_URL` にバックエンドAPIのURLを設定
+5. `VITE_API_BASE_URL` にバックエンド API の URL を設定
 
 実行例（環境変数の設定）：
+
 ```
 VITE_API_BASE_URL=https://your-syncfam-backend.render.com/api/v1
 ```
