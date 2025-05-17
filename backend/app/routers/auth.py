@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.deps import get_db
 from app.crud.user import create_user, get_user_by_email
 from app.schemas.common import Response
@@ -64,8 +65,8 @@ async def login_for_access_token(
         key="refresh_token",
         value=token["refresh_token"],
         httponly=True,
-        secure=False,  # 開発環境ではFalse、本番環境ではTrue
-        samesite="lax",
+        secure=False,  # 開発環境ではHTTPでも送信可能
+        samesite="strict",  # クロスサイトリクエストでは送信しない
         max_age=60 * 60 * 24 * 7,  # 7日間
     )
 
@@ -103,8 +104,8 @@ async def refresh_token(
         key="refresh_token",
         value=token["refresh_token"],
         httponly=True,
-        secure=False,  # 開発環境ではFalse、本番環境ではTrue
-        samesite="lax",
+        secure=False,  # 開発環境ではHTTPでも送信可能
+        samesite="strict",  # クロスサイトリクエストでは送信しない
         max_age=60 * 60 * 24 * 7,  # 7日間
     )
 

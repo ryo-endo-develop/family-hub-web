@@ -1,10 +1,31 @@
+import logging
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.config import settings
 from app.db.session import SessionLocal
 from app.routers.api import api_router
+
+# セキュリティヘッダーミドルウェア
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        
+        # セキュリティ関連のヘッダーを追加
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        
+        # 本番環境のみ適用するヘッダー
+        if not settings.DEBUG:
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+            response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; object-src 'none'"
+        
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        
+        return response
 
 # FastAPIアプリケーションの作成
 app = FastAPI(
@@ -14,17 +35,32 @@ app = FastAPI(
     redoc_url=f"{settings.API_V1_STR}/redoc",
 )
 
+# 各種ミドルウェアを登録
+# セキュリティヘッダーミドルウェア
+app.add_middleware(SecurityHeadersMiddleware)
+
 # CORSミドルウェアの設定
 if settings.BACKEND_CORS_ORIGINS:
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"]
-        if settings.DEBUG
-        else [str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
+        allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "Accept"],
+    )
+elif settings.DEBUG:
+    # 開発環境でのみすべてのオリジンを許可
+    print("警告: 開発モードです。すべてのオリジンが許可されています。")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
+else:
+    # 本番環境でCORS設定がない場合は警告
+    print("警告: BACKEND_CORS_ORIGINSが設定されていません。クロスオリジンリクエストはすべてブロックされます。")
 
 # APIルーターをアプリケーションに登録
 app.include_router(api_router, prefix=settings.API_V1_STR)
@@ -35,9 +71,14 @@ async def startup_event():
     """
     アプリケーション起動時の処理
     """
-    print(
-        "アプリケーションが起動しました。データベーススキーマはAlembicで管理されます。"
-    )
+    # ログ設定を初期化
+    try:
+        from app.utils.logging_utils import setup_logging
+        log_level = logging.DEBUG if settings.DEBUG else logging.INFO
+        setup_logging(level=log_level)
+        print("\u30edグシステムを初期化しました")
+    except Exception as e:
+        print(f"\u30edグ設定の初期化エラー: {e}")
     
     # ルーティンタスクのリセット処理を実行
     try:

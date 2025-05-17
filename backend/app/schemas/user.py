@@ -1,8 +1,9 @@
+import re
 import uuid
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, validator
 
 
 # 共通属性のベースモデル
@@ -21,10 +22,68 @@ class UserCreate(BaseModel):
     first_name: str
     last_name: str
     avatar_url: Optional[str] = None
+    
+    @validator('password')
+    def password_strength(cls, v):
+        # パスワードの複雑さをチェック
+        error_message = "パスワードは次の条件を満たす必要があります: "
+        requirements = []
+        
+        if len(v) < 8:
+            requirements.append("最低8文字以上")
+            
+        if not re.search(r'[A-Z]', v):
+            requirements.append("大文字を1文字以上")
+            
+        if not re.search(r'[a-z]', v):
+            requirements.append("小文字を1文字以上")
+            
+        if not re.search(r'[0-9]', v):
+            requirements.append("数字を1文字以上")
+            
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', v):
+            requirements.append("特殊文字(!@#$%^&*(),.?\":{}|<>)を1文字以上")
+        
+        if requirements:
+            error_message += ", ".join(requirements)
+            raise ValueError(error_message)
+            
+        return v
 
 
 class UserUpdate(UserBase):
     password: Optional[str] = None
+    
+    @validator('password')
+    def password_strength(cls, v):
+        # Noneの場合はパスする
+        if v is None:
+            return v
+            
+        # パスワードの複雑さをチェック
+        error_message = "パスワードは次の条件を満たす必要があります: "
+        requirements = []
+        
+        if len(v) < 8:
+            requirements.append("最低8文字以上")
+            
+        if not re.search(r'[A-Z]', v):
+            requirements.append("大文字を1文字以上")
+            
+        if not re.search(r'[a-z]', v):
+            requirements.append("小文字を1文字以上")
+            
+        if not re.search(r'[0-9]', v):
+            requirements.append("数字を1文字以上")
+            
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', v):
+            requirements.append("特殊文字(!@#$%^&*(),.?\":{}|<>)を1文字以上")
+        
+        if requirements:
+            error_message += ", ".join(requirements)
+            raise ValueError(error_message)
+            
+        return v
 
 
 # レスポンス時に使用するモデル

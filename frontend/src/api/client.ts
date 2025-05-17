@@ -11,12 +11,16 @@ export const setGlobalNotificationHandler = (handler: NotificationHandler) => {
   globalNotificationHandler = handler;
 };
 
+// CSP責任やXSS対策のため、ローカルストレージからの読み込みを許可しない
 // メモリ内でアクセストークンを管理
 let accessToken: string | null = null;
 
 // アクセストークンを設定する関数
 export const setAccessToken = (token: string | null) => {
   accessToken = token;
+
+  // トークン設定をログからそのまま表示しない
+  console.log(`アクセストークンが${token ? '設定されました' : 'クリアされました'}`); 
 };
 
 // アクセストークンを取得する関数
@@ -48,9 +52,29 @@ const apiClient = axios.create({
 // リクエストインターセプター
 apiClient.interceptors.request.use(
   config => {
+    // セキュリティ対策を追加
+    
     // リクエスト前にアクセストークンをヘッダーに設定
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+    
+    // CSRF対策：フォームデータを送信する場合は状態を確認
+    if ((config.method === 'post' || config.method === 'put' || config.method === 'delete') && 
+        config.headers['Content-Type'] === 'application/x-www-form-urlencoded') {
+      // CSRF対策としてヘッダーにリファラー情報を追加
+      // これによりサーバー側でリファラーチェックが可能に
+      config.headers['X-Requested-With'] = 'XMLHttpRequest';
+    }
+
+    // デバッグ用のログ出力（センシティブな情報は隠蔽）
+    if (process.env.NODE_ENV === 'development') {
+      const debugConfig = { ...config };
+      // セキュリティのため、機密ヘッダーをログに表示しない
+      if (debugConfig.headers && debugConfig.headers.Authorization) {
+        debugConfig.headers = { ...debugConfig.headers, Authorization: '******' };
+      }
+      console.log(`API リクエスト: ${config.method?.toUpperCase()} ${config.url}`);
     }
 
     return config;
