@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -15,27 +15,29 @@ export const useAuth = () => {
     (state: RootState) => state.auth,
   );
 
-  // 初期化済みかどうか管理するステートを作成
-  const [initialized, setInitialized] = useState(false);
-
-  // 認証状態を確認する関数
-  const checkAuthStatus = useCallback(async () => {
-    try {
-      await dispatch(checkAuth()).unwrap();
-    } catch (error) {
-      console.error('認証状態の確認に失敗しました:', error);
-    } finally {
-      setInitialized(true);
-    }
-  }, [dispatch]);
+  // 初期化済みかどうかのフラグ
+  const initialized = useRef(false);
 
   // マウント時に一度だけ実行する初期化処理
   useEffect(() => {
-    // まだ初期化されていない場合のみ実行
-    if (!initialized) {
-      checkAuthStatus();
+    // 既に初期化済みなら何もしない
+    if (initialized.current) {
+      return;
     }
-  }, [initialized, checkAuthStatus]);
+
+    // 初期化処理を実行
+    const initialize = async () => {
+      initialized.current = true;
+      try {
+        // 認証状態を確認
+        await dispatch(checkAuth());
+      } catch (error) {
+        console.error('認証状態の確認に失敗しました:', error);
+      }
+    };
+
+    initialize();
+  }, [dispatch]);
 
   return {
     isAuthenticated,
@@ -43,7 +45,5 @@ export const useAuth = () => {
     loading,
     error,
     currentFamily,
-    initialized,
-    checkAuthStatus,
   };
 };

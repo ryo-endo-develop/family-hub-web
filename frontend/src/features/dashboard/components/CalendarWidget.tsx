@@ -13,7 +13,7 @@ interface CalendarWidgetProps {
   familyId: string;
 }
 
-const CalendarWidget = ({}: CalendarWidgetProps) => {
+const CalendarWidget = ({ familyId }: CalendarWidgetProps) => {
   const today = new Date();
 
   // 今日のイベントをフィルタリング
