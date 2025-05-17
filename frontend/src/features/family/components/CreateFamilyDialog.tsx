@@ -14,7 +14,7 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 
-import { useFamilyApi, FamilyCreate } from '../../../api/hooks/useFamilyApi';
+import { useFamilyApi } from '../../../api/hooks/useFamilyApi';
 
 // バリデーションスキーマ
 const familySchema = z.object({

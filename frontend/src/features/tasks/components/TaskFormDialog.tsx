@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -61,35 +61,35 @@ interface TaskFormDialogProps {
 // 落ち着いた中間色調のタグカラーパレット
 const tagPalette = {
   // メインカラー (落ち着いた中間色調)
-  blue: '#5c6bc0',     // 落ち着いたブルー
-  teal: '#26a69a',     // 落ち着いたティール
-  green: '#66bb6a',    // 落ち着いたグリーン
-  amber: '#ffca28',    // 落ち着いたアンバー
-  orange: '#ffa726',   // 落ち着いたオレンジ
-  red: '#ef5350',      // 落ち着いたレッド
-  pink: '#ec407a',     // 落ち着いたピンク
-  purple: '#ab47bc',   // 落ち着いたパープル
-  indigo: '#5c6bc0',   // 落ち着いたインディゴ
+  blue: '#5c6bc0', // 落ち着いたブルー
+  teal: '#26a69a', // 落ち着いたティール
+  green: '#66bb6a', // 落ち着いたグリーン
+  amber: '#ffca28', // 落ち着いたアンバー
+  orange: '#ffa726', // 落ち着いたオレンジ
+  red: '#ef5350', // 落ち着いたレッド
+  pink: '#ec407a', // 落ち着いたピンク
+  purple: '#ab47bc', // 落ち着いたパープル
+  indigo: '#5c6bc0', // 落ち着いたインディゴ
   deepPurple: '#7e57c2', // 深いパープル
-  cyan: '#4dd0e1',     // シアン
+  cyan: '#4dd0e1', // シアン
   blueGrey: '#78909c', // ブルーグレー
-  
+
   // 暗いカラーパレット (白いテキスト用)
   dark: {
-    blue: '#3949ab',    // 暗めのブルー
-    teal: '#00796b',    // 暗めのティール
-    green: '#2e7d32',   // 暗めのグリーン
-    red: '#d32f2f',     // 暗めのレッド
-    purple: '#7b1fa2',  // 暗めのパープル
-    brown: '#5d4037',   // 暗めのブラウン
-    blueGrey: '#455a64' // 暗めのブルーグレー
+    blue: '#3949ab', // 暗めのブルー
+    teal: '#00796b', // 暗めのティール
+    green: '#2e7d32', // 暗めのグリーン
+    red: '#d32f2f', // 暗めのレッド
+    purple: '#7b1fa2', // 暗めのパープル
+    brown: '#5d4037', // 暗めのブラウン
+    blueGrey: '#455a64', // 暗めのブルーグレー
   },
-  
+
   // コントラスト色計算用
   isDark: (color: string): boolean => {
     // 簡易的な明度判定（背景色の明るさに基づいて文字色を選ぶ）
     if (!color || !color.startsWith('#')) return false;
-    
+
     // 16進数のカラーコードを解析（短縮形も対応）
     let r, g, b;
     if (color.length === 4) {
@@ -101,23 +101,21 @@ const tagPalette = {
       g = parseInt(color.substring(3, 5), 16);
       b = parseInt(color.substring(5, 7), 16);
     }
-    
+
     // YIQを使った明度計算（明度が145未満は暗い色と判定 - より安全なコントラストのために閾値を上げた）
-    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
     return yiq < 145;
-  }
+  },
 };
 
 const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) => {
-  const theme = useTheme();
-  const { user } = useAppSelector((state) => state.auth);
   const taskApi = useTaskApi();
   const familyApi = useFamilyApi();
   const tagApi = useTagApi();
-  
+
   // 前回のダイアログオープン状態を追跡するref
   const prevOpenRef = useRef(false);
-  
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
@@ -125,7 +123,14 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
   const [isLoadingData, setIsLoadingData] = useState(false);
 
   // React Hook Formの設定
-  const { control, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<TaskCreate>({
+  const {
+    control,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<TaskCreate>({
     resolver: zodResolver(taskCreateSchema),
     defaultValues: {
       title: '',
@@ -142,68 +147,72 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
 
   // 選択中のタグIDを監視
   const selectedTagIds = watch('tag_ids') || [];
-  // タイトルも監視
-  const currentTitle = watch('title');
 
   // タグの色を取得するヘルパー関数
   // タグごとに一貫した落ち着いた色を生成
-  const getTagColor = useCallback((tag: Tag, isSelected: boolean, useDarkVariant: boolean = false) => {
-    if (isSelected) {
-      return undefined; // 選択時はMUIが適用するカラーを使用
-    }
-
-    // タグに色が設定されている場合はそれをベースにする
-    if (tag.color) {
-      // 有効なHEXカラーコードが設定されていればそのまま使用
-      if (tag.color.startsWith('#') && (tag.color.length === 7 || tag.color.length === 4)) {
-        return tag.color;
+  const getTagColor = useCallback(
+    (tag: Tag, isSelected: boolean, useDarkVariant: boolean = false) => {
+      if (isSelected) {
+        return undefined; // 選択時はMUIが適用するカラーを使用
       }
-    }
-    
-    // タグIDを使って一貫した色を生成
-    const tagId = tag.id || 'default';
-    const seed = tagId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    
-    // 暗いバージョンがリクエストされた場合は、darkパレットから選択
-    if (useDarkVariant) {
-      const darkColorKeys = Object.keys(tagPalette.dark);
-      const darkColorKey = darkColorKeys[seed % darkColorKeys.length];
+
+      // タグに色が設定されている場合はそれをベースにする
+      if (tag.color) {
+        // 有効なHEXカラーコードが設定されていればそのまま使用
+        if (tag.color.startsWith('#') && (tag.color.length === 7 || tag.color.length === 4)) {
+          return tag.color;
+        }
+      }
+
+      // タグIDを使って一貫した色を生成
+      const tagId = tag.id || 'default';
+      const seed = tagId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+
+      // 暗いバージョンがリクエストされた場合は、darkパレットから選択
+      if (useDarkVariant) {
+        const darkColorKeys = Object.keys(tagPalette.dark);
+        const darkColorKey = darkColorKeys[seed % darkColorKeys.length];
+        // @ts-ignore
+        return tagPalette.dark[darkColorKey];
+      }
+
+      // 通常はメインパレットから選択
+      const colorKeys = Object.keys(tagPalette).filter(
+        key => key !== 'isDark' && key !== 'dark', // 関数とdarkパレットを除外
+      );
+      const colorKey = colorKeys[seed % colorKeys.length];
       // @ts-ignore
-      return tagPalette.dark[darkColorKey];
-    }
-    
-    // 通常はメインパレットから選択
-    const colorKeys = Object.keys(tagPalette).filter(key => 
-      key !== 'isDark' && key !== 'dark' // 関数とdarkパレットを除外
-    );
-    const colorKey = colorKeys[seed % colorKeys.length];
-    // @ts-ignore
-    return tagPalette[colorKey];
-  }, []);
+      return tagPalette[colorKey];
+    },
+    [],
+  );
 
   // 家族メンバーとタグを取得する関数
-  const fetchFamilyData = useCallback(async (familyId: string) => {
-    if (!familyId) return;
-    
-    setIsLoadingData(true);
-    try {
-      // 家族メンバーの取得
-      const membersResult = await familyApi.getFamilyMembers(familyId);
-      if (membersResult) {
-        setFamilyMembers(membersResult);
+  const fetchFamilyData = useCallback(
+    async (familyId: string) => {
+      if (!familyId) return;
+
+      setIsLoadingData(true);
+      try {
+        // 家族メンバーの取得
+        const membersResult = await familyApi.getFamilyMembers(familyId);
+        if (membersResult) {
+          setFamilyMembers(membersResult);
+        }
+
+        // タグの取得
+        const tagsResult = await tagApi.getFamilyTags(familyId);
+        if (tagsResult) {
+          setTags(tagsResult);
+        }
+      } catch (err) {
+        console.error('家族データの取得に失敗しました:', err);
+      } finally {
+        setIsLoadingData(false);
       }
-      
-      // タグの取得
-      const tagsResult = await tagApi.getFamilyTags(familyId);
-      if (tagsResult) {
-        setTags(tagsResult);
-      }
-    } catch (err) {
-      console.error('家族データの取得に失敗しました:', err);
-    } finally {
-      setIsLoadingData(false);
-    }
-  }, [familyApi, tagApi]);  // APIフックを依存配列に追加
+    },
+    [familyApi, tagApi],
+  ); // APIフックを依存配列に追加
 
   // ダイアログが開かれた時にデータを取得
   useEffect(() => {
@@ -211,7 +220,7 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
     if (open && !prevOpenRef.current && familyId) {
       fetchFamilyData(familyId);
     }
-    
+
     // ダイアログの表示状態を更新
     prevOpenRef.current = open;
   }, [open, familyId, fetchFamilyData]);
@@ -233,9 +242,7 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
       let dueDate = null;
       if (task.due_date) {
         // 文字列の場合はDateオブジェクトに変換
-        dueDate = typeof task.due_date === 'string' 
-          ? new Date(task.due_date) 
-          : task.due_date;
+        dueDate = typeof task.due_date === 'string' ? new Date(task.due_date) : task.due_date;
       }
 
       reset({
@@ -265,28 +272,28 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
   }, [task, reset, familyId]);
 
   // フォーム送信ハンドラ
-  const onSubmit: SubmitHandler<TaskCreate> = async (data) => {
+  const onSubmit: SubmitHandler<TaskCreate> = async data => {
     if (!familyId) {
-      setError("家族IDが指定されていません");
+      setError('家族IDが指定されていません');
       return;
     }
-    
+
     // 念のため最新の家族IDを設定
     data.family_id = familyId;
-    
+
     if (data.due_date && !(data.due_date instanceof Date)) {
       // Date型に変換を試みる
       try {
         data.due_date = new Date(data.due_date);
       } catch (e) {
-        console.error("日付変換エラー:", e);
+        console.error('日付変換エラー:', e);
         data.due_date = null; // 変換失敗時はヌルに設定
       }
     }
-    
+
     setSubmitting(true);
     setError(null);
-    
+
     try {
       if (task) {
         // タスク更新
@@ -303,7 +310,7 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
           return;
         }
       }
-      
+
       // 更新があったことを通知し、タイトルも渡す
       onClose(true, data.title);
     } catch (error: any) {
@@ -325,7 +332,7 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
     const newTagIds = currentTagIds.includes(tagId)
       ? currentTagIds.filter(id => id !== tagId)
       : [...currentTagIds, tagId];
-    
+
     setValue('tag_ids', newTagIds);
   };
 
@@ -333,14 +340,14 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogTitle>{task ? 'タスクを編集' : '新規タスク'}</DialogTitle>
-        
+
         <DialogContent>
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
             </Alert>
           )}
-          
+
           {isLoadingData && (
             <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
               <CircularProgress size={24} />
@@ -364,7 +371,7 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
                 )}
               />
             </Grid>
-            
+
             <Grid item xs={12}>
               <Controller
                 name="description"
@@ -382,7 +389,7 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
                 )}
               />
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <Controller
                 name="status"
@@ -404,7 +411,7 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
                 )}
               />
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <Controller
                 name="priority"
@@ -426,7 +433,7 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
                 )}
               />
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <Controller
                 name="due_date"
@@ -435,13 +442,13 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
                   <DatePicker
                     label="期限日"
                     value={field.value}
-                    onChange={(newValue) => {
+                    onChange={newValue => {
                       // nullまたはDateオブジェクトを確実に渡す
                       if (newValue && !(newValue instanceof Date)) {
                         try {
                           field.onChange(new Date(newValue));
                         } catch (e) {
-                          console.error("日付変換エラー:", e);
+                          console.error('日付変換エラー:', e);
                           field.onChange(null);
                         }
                       } else {
@@ -459,7 +466,7 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
                 )}
               />
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <Controller
                 name="is_routine"
@@ -469,7 +476,7 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
                     control={
                       <Checkbox
                         checked={field.value}
-                        onChange={(e) => field.onChange(e.target.checked)}
+                        onChange={e => field.onChange(e.target.checked)}
                       />
                     }
                     label="ルーティンタスク"
@@ -491,11 +498,11 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
                       labelId="assignee-label"
                       label="担当者"
                       value={field.value || ''}
-                      onChange={(e) => field.onChange(e.target.value === '' ? null : e.target.value)}
+                      onChange={e => field.onChange(e.target.value === '' ? null : e.target.value)}
                       disabled={familyMembers.length === 0}
                     >
                       <MenuItem value="">未割当</MenuItem>
-                      {familyMembers.map((member) => (
+                      {familyMembers.map(member => (
                         <MenuItem key={member.user_id} value={member.user_id}>
                           <ListItemAvatar sx={{ minWidth: 36 }}>
                             <Avatar
@@ -506,7 +513,9 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
                               {member.user.first_name[0]}
                             </Avatar>
                           </ListItemAvatar>
-                          <ListItemText primary={`${member.user.last_name} ${member.user.first_name}`} />
+                          <ListItemText
+                            primary={`${member.user.last_name} ${member.user.first_name}`}
+                          />
                         </MenuItem>
                       ))}
                     </Select>
@@ -526,17 +535,17 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
                     利用可能なタグがありません
                   </Typography>
                 ) : (
-                  tags.map((tag) => {
+                  tags.map(tag => {
                     const isSelected = selectedTagIds.includes(tag.id);
-                    
+
                     return (
                       <Chip
                         key={tag.id}
                         label={tag.name}
                         onClick={() => handleTagToggle(tag.id)}
                         size="small"
-                        color={isSelected ? "primary" : "default"}
-                        variant={isSelected ? "filled" : "outlined"}
+                        color={isSelected ? 'primary' : 'default'}
+                        variant={isSelected ? 'filled' : 'outlined'}
                         sx={{
                           // タグの色を取得
                           bgcolor: isSelected ? undefined : getTagColor(tag, isSelected),
@@ -544,10 +553,10 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
                           // 明度に基づいて適切な文字色を選択 - 明るい背景色には暗い文字を使用
                           color: (() => {
                             if (isSelected) return undefined;
-                            
+
                             const color = getTagColor(tag, isSelected);
                             if (!color) return 'rgba(0, 0, 0, 0.87)';
-                            
+
                             // 明るい背景色には濃い新字の黒を使い、暗い背景色には白を使う
                             return tagPalette.isDark(color) ? '#ffffff' : 'rgba(0, 0, 0, 0.87)';
                           })(),
@@ -555,11 +564,16 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
                           transition: 'all 0.15s ease-in-out',
                           transform: isSelected ? 'scale(1.03)' : 'scale(1)',
                           fontWeight: isSelected ? 600 : 500,
-                          boxShadow: isSelected ? '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)' : 'none',
+                          boxShadow: isSelected
+                            ? '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)'
+                            : 'none',
                           '&:hover': {
                             // ホバー時は兄弟に透明度を下げる
-                            bgcolor: isSelected ? undefined : 
-                              (color => color ? `${color}` : undefined)(getTagColor(tag, isSelected)),
+                            bgcolor: isSelected
+                              ? undefined
+                              : (color => (color ? `${color}` : undefined))(
+                                  getTagColor(tag, isSelected),
+                                ),
                             opacity: 0.85,
                             transform: 'scale(1.03)',
                             boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
@@ -574,7 +588,7 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
                           ...(isSelected && {
                             fontWeight: 600,
                             letterSpacing: '0.01em',
-                          })
+                          }),
                         }}
                       />
                     );
@@ -582,35 +596,27 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
                 )}
               </Box>
             </Grid>
-            
+
             {/* 家族IDフィールド（非表示） */}
             <Controller
               name="family_id"
               control={control}
-              render={({ field }) => (
-                <input type="hidden" {...field} />
-              )}
+              render={({ field }) => <input type="hidden" {...field} />}
             />
 
             {/* タグIDsフィールド（非表示） */}
             <Controller
               name="tag_ids"
               control={control}
-              render={({ field }) => (
-                <input type="hidden" {...field} />
-              )}
+              render={({ field }) => <input type="hidden" {...field} />}
             />
           </Grid>
         </DialogContent>
-        
+
         <DialogActions>
           <Button onClick={handleClose}>キャンセル</Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={submitting || isLoadingData}
-          >
-            {submitting ? '保存中...' : (task ? '更新' : '作成')}
+          <Button type="submit" variant="contained" disabled={submitting || isLoadingData}>
+            {submitting ? '保存中...' : task ? '更新' : '作成'}
           </Button>
         </DialogActions>
       </form>

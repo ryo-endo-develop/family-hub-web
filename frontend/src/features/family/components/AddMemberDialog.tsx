@@ -21,7 +21,7 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 
-import { useFamilyApi, FamilyMemberCreate } from '../../../api/hooks/useFamilyApi';
+import { useFamilyApi } from '../../../api/hooks/useFamilyApi';
 
 // バリデーションスキーマ
 const memberSchema = z.object({
@@ -120,18 +120,9 @@ const AddMemberDialog: React.FC<AddMemberDialogProps> = ({ open, familyId, onClo
             name="role"
             control={control}
             render={({ field }) => (
-              <FormControl
-                fullWidth
-                margin="normal"
-                error={!!errors.role}
-                disabled={loading}
-              >
+              <FormControl fullWidth margin="normal" error={!!errors.role} disabled={loading}>
                 <InputLabel id="role-label">役割</InputLabel>
-                <Select
-                  {...field}
-                  labelId="role-label"
-                  label="役割"
-                >
+                <Select {...field} labelId="role-label" label="役割">
                   <MenuItem value="parent">親</MenuItem>
                   <MenuItem value="child">子</MenuItem>
                   <MenuItem value="other">その他</MenuItem>
@@ -149,7 +140,7 @@ const AddMemberDialog: React.FC<AddMemberDialogProps> = ({ open, familyId, onClo
                 control={
                   <Checkbox
                     checked={field.value}
-                    onChange={(e) => field.onChange(e.target.checked)}
+                    onChange={e => field.onChange(e.target.checked)}
                     disabled={loading}
                   />
                 }

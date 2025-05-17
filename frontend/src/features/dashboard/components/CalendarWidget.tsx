@@ -1,7 +1,6 @@
 import { CalendarMonth as CalendarIcon } from '@mui/icons-material';
 import { Card, CardContent, CardHeader, Grid, Typography } from '@mui/material';
-import { format, isSameDay } from 'date-fns';
-import { ja } from 'date-fns/locale';
+import { format, isSameDay , ja } from 'date-fns';
 
 // ダミーデータ
 const dummyEvents = [
@@ -14,7 +13,7 @@ interface CalendarWidgetProps {
   familyId: string;
 }
 
-const CalendarWidget = ({ familyId }: CalendarWidgetProps) => {
+const CalendarWidget = ({}: CalendarWidgetProps) => {
   const today = new Date();
 
   // 今日のイベントをフィルタリング

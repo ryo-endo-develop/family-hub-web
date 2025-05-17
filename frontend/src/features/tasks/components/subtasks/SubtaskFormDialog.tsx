@@ -32,7 +32,6 @@ interface SubtaskFormDialogProps {
 }
 
 const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps) => {
-  const { user } = useAppSelector(state => state.auth);
   const taskApi = useTaskApi();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,9 +56,6 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
       tag_ids: [],
     },
   });
-
-  // タイトルを監視
-  const currentTitle = watch('title');
 
   // ダイアログが開くたびにフォームをリセット
   useEffect(() => {

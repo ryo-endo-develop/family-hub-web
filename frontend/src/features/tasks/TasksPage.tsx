@@ -1,7 +1,24 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 
-import { Add as AddIcon, ViewList as ViewListIcon, AccountTree as AccountTreeIcon } from '@mui/icons-material';
-import { Box, Button, CircularProgress, Container, Typography, Alert, ToggleButtonGroup, ToggleButton, Paper, Fab, useMediaQuery, useTheme } from '@mui/material';
+import {
+  Add as AddIcon,
+  ViewList as ViewListIcon,
+  AccountTree as AccountTreeIcon,
+} from '@mui/icons-material';
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Container,
+  Typography,
+  Alert,
+  ToggleButtonGroup,
+  ToggleButton,
+  Paper,
+  Fab,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
 
 import { useTaskApi } from '../../api/hooks/useTaskApi';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -14,7 +31,6 @@ import TaskFormDialog from './components/TaskFormDialog';
 import TaskList from './components/TaskList';
 import { Task, TaskFilter } from './types';
 
-
 // 表示モード
 type ViewMode = 'flat' | 'tree';
 
@@ -23,7 +39,7 @@ const TasksPage = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const { currentFamily } = useAppSelector(state => state.auth);
-  const { getTasks, getRootTasks, deleteTask, loading: apiLoading, error: apiError } = useTaskApi();
+  const { getTasks, getRootTasks, deleteTask, error: apiError } = useTaskApi();
   const { addNotification } = useNotification();
 
   // フラグと状態の管理
@@ -35,7 +51,7 @@ const TasksPage = () => {
   const [isSubtaskFormOpen, setIsSubtaskFormOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [parentTask, setParentTask] = useState<Task | null>(null);
-  
+
   // 表示モード（フラットビュー or ツリービュー）
   // モバイルまたはタブレットの場合は常にフラットビュー
   const [viewMode, setViewMode] = useState<ViewMode>('flat');
@@ -47,7 +63,7 @@ const TasksPage = () => {
       setViewMode('flat');
     }
   }, [isTablet, viewMode]);
-  
+
   // 初期表示では常にフラットビューを使用
   useEffect(() => {
     setViewMode('flat');
@@ -84,7 +100,7 @@ const TasksPage = () => {
       setError(null);
 
       let response;
-      
+
       // 表示モードに応じてAPIを切り替え
       if (viewMode === 'tree') {
         // ツリービュー - ルートタスクのみ取得（サブタスクは階層的に表示）
@@ -140,18 +156,18 @@ const TasksPage = () => {
       // 削除するタスクを特定
       const taskToDelete = tasks.find(t => t.id === taskId);
       const taskTitle = taskToDelete?.title || 'タスク';
-      
+
       // 削除APIを呼び出し
       const success = await deleteTask(taskId);
-      
+
       if (success) {
         // 成功通知を表示
         addNotification({
           type: 'success',
           message: `タスク「${taskTitle}」を削除しました`,
-          duration: 3000
+          duration: 3000,
         });
-        
+
         // データを再取得
         fetchTasks();
       }
@@ -164,18 +180,18 @@ const TasksPage = () => {
   // タスク作成/編集完了ハンドラ
   const handleTaskFormClose = (refreshNeeded: boolean, taskTitle?: string) => {
     setIsFormOpen(false);
-    
+
     if (refreshNeeded) {
       // 成功通知を表示
       const actionText = selectedTask ? '更新' : '作成';
-      const title = taskTitle || (selectedTask?.title || 'タスク');
-      
+      const title = taskTitle || selectedTask?.title || 'タスク';
+
       addNotification({
         type: 'success',
         message: `タスク「${title}」を${actionText}しました`,
-        duration: 3000
+        duration: 3000,
       });
-      
+
       fetchTasks();
     }
   };
@@ -183,18 +199,18 @@ const TasksPage = () => {
   // サブタスク作成完了ハンドラ
   const handleSubtaskFormClose = (refreshNeeded: boolean, taskTitle?: string) => {
     setIsSubtaskFormOpen(false);
-    
+
     if (refreshNeeded) {
       // 成功通知を表示
       const parentName = parentTask?.title || 'タスク';
       const childName = taskTitle || 'サブタスク';
-      
+
       addNotification({
         type: 'success',
         message: `「${parentName}」にサブタスク「${childName}」を追加しました`,
-        duration: 3000
+        duration: 3000,
       });
-      
+
       fetchTasks();
     }
   };
@@ -265,13 +281,15 @@ const TasksPage = () => {
   return (
     <Container maxWidth="lg">
       <Box sx={{ mb: 4 }}>
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          mb: 3,
-          flexWrap: isMobile ? 'wrap' : 'nowrap',
-        }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 3,
+            flexWrap: isMobile ? 'wrap' : 'nowrap',
+          }}
+        >
           <Box>
             <Typography variant="h4" component="h1">
               タスク一覧
@@ -282,7 +300,7 @@ const TasksPage = () => {
               </Typography>
             )}
           </Box>
-          
+
           {/* デスクトップ用の新規タスクボタン */}
           {!isMobile && (
             <Button
@@ -311,13 +329,15 @@ const TasksPage = () => {
         {/* フィルターパネルと表示モード切替 */}
         <Box sx={{ mb: 3 }}>
           <Paper elevation={1} sx={{ p: 2 }}>
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'flex-start',
-              flexDirection: isMobile ? 'column' : 'row',
-              gap: isMobile ? 2 : 0,
-            }}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                flexDirection: isMobile ? 'column' : 'row',
+                gap: isMobile ? 2 : 0,
+              }}
+            >
               <Box sx={{ width: '100%' }}>
                 <TaskFilterPanel
                   filters={displayFilters}
@@ -325,7 +345,7 @@ const TasksPage = () => {
                   disabled={loading}
                 />
               </Box>
-              
+
               {/* タブレットより大きい画面でのみ表示モード切替を表示 */}
               {!isTablet && (
                 <ToggleButtonGroup
@@ -334,9 +354,9 @@ const TasksPage = () => {
                   onChange={handleViewModeChange}
                   aria-label="表示モード"
                   size="small"
-                  sx={{ 
+                  sx={{
                     ml: 2,
-                    alignSelf: 'center'
+                    alignSelf: 'center',
                   }}
                 >
                   <ToggleButton value="flat" aria-label="フラットビュー">

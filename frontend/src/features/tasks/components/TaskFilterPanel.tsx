@@ -1,12 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 
-import { 
+import {
   FilterList as FilterListIcon,
   Close as CloseIcon,
   EventNote as DateIcon,
   PriorityHigh as PriorityIcon,
   Autorenew as RoutineIcon,
-  Assignment as StatusIcon
+  Assignment as StatusIcon,
 } from '@mui/icons-material';
 import {
   Box,
@@ -31,8 +31,7 @@ import {
   Stack,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
-import { format } from 'date-fns';
-import { ja } from 'date-fns/locale';
+import { format, ja } from 'date-fns';
 
 import { TaskFilter } from '../types';
 
@@ -50,7 +49,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   // モバイル用のドロワーの表示状態
   const [drawerOpen, setDrawerOpen] = useState(false);
   // デスクトップ用のパネル展開状態
@@ -68,7 +67,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
   // フィルターをクリア
   const clearFilters = () => {
     if (disabled) return;
-    
+
     // 明示的に変更が必要なフィルターのみを更新
     const clearedFilters: Partial<TaskFilter> = {
       status: undefined,
@@ -79,23 +78,27 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
       due_after: undefined,
       tag_ids: undefined,
     };
-    
+
     onFilterChange(clearedFilters);
   };
 
   // ステータス変更ハンドラ
   const handleStatusChange = (event: SelectChangeEvent<string>) => {
     if (disabled) return;
-    
-    const value = event.target.value === '' ? undefined : event.target.value as 'pending' | 'in_progress' | 'completed';
+
+    const value =
+      event.target.value === ''
+        ? undefined
+        : (event.target.value as 'pending' | 'in_progress' | 'completed');
     onFilterChange({ status: value });
   };
 
   // 優先度変更ハンドラ
   const handlePriorityChange = (event: SelectChangeEvent<string>) => {
     if (disabled) return;
-    
-    const value = event.target.value === '' ? undefined : event.target.value as 'low' | 'medium' | 'high';
+
+    const value =
+      event.target.value === '' ? undefined : (event.target.value as 'low' | 'medium' | 'high');
     onFilterChange({ priority: value });
   };
 
@@ -133,7 +136,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
   // フィルターチップを生成する関数
   const renderFilterChips = () => {
     const chips = [];
-    
+
     // ステータスフィルター
     if (filters.status) {
       const statusLabels: Record<string, string> = {
@@ -141,7 +144,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
         in_progress: '進行中',
         completed: '完了',
       };
-      
+
       chips.push(
         <Chip
           key="status"
@@ -151,10 +154,10 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
           color="primary"
           variant="outlined"
           size="small"
-        />
+        />,
       );
     }
-    
+
     // 優先度フィルター
     if (filters.priority) {
       const priorityLabels: Record<string, string> = {
@@ -162,7 +165,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
         medium: '中',
         low: '低',
       };
-      
+
       chips.push(
         <Chip
           key="priority"
@@ -172,10 +175,10 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
           color="primary"
           variant="outlined"
           size="small"
-        />
+        />,
       );
     }
-    
+
     // ルーティンフィルター
     if (filters.is_routine) {
       chips.push(
@@ -187,10 +190,10 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
           color="primary"
           variant="outlined"
           size="small"
-        />
+        />,
       );
     }
-    
+
     // 期限日（から）フィルター
     if (filters.due_after) {
       const formattedDate = format(new Date(filters.due_after), 'yyyy/MM/dd', { locale: ja });
@@ -203,10 +206,10 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
           color="primary"
           variant="outlined"
           size="small"
-        />
+        />,
       );
     }
-    
+
     // 期限日（まで）フィルター
     if (filters.due_before) {
       const formattedDate = format(new Date(filters.due_before), 'yyyy/MM/dd', { locale: ja });
@@ -219,10 +222,10 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
           color="primary"
           variant="outlined"
           size="small"
-        />
+        />,
       );
     }
-    
+
     return chips;
   };
 
@@ -233,11 +236,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
         {/* ステータス選択 */}
         <Grid item xs={12} sm={6}>
           <FormControl fullWidth size="small">
-            <InputLabel 
-              id="status-label"
-              notched
-              shrink
-            >
+            <InputLabel id="status-label" notched shrink>
               ステータス
             </InputLabel>
             <Select
@@ -248,12 +247,14 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
               onChange={handleStatusChange}
               displayEmpty
               disabled={disabled}
-              renderValue={(value) => {
-                return value === '' ? 'すべて' : {
-                  'pending': '未着手',
-                  'in_progress': '進行中',
-                  'completed': '完了'
-                }[value]
+              renderValue={value => {
+                return value === ''
+                  ? 'すべて'
+                  : {
+                      pending: '未着手',
+                      in_progress: '進行中',
+                      completed: '完了',
+                    }[value];
               }}
               sx={{
                 '& .MuiInputLabel-shrink': {
@@ -266,7 +267,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
                   paddingTop: '8px',
                   paddingBottom: '8px',
                   paddingLeft: '14px',
-                }
+                },
               }}
             >
               <MenuItem value="">すべて</MenuItem>
@@ -280,10 +281,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
         {/* 優先度選択 */}
         <Grid item xs={12} sm={6}>
           <FormControl fullWidth size="small">
-            <InputLabel 
-              id="priority-label"
-              shrink
-            >
+            <InputLabel id="priority-label" shrink>
               優先度
             </InputLabel>
             <Select
@@ -294,12 +292,14 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
               onChange={handlePriorityChange}
               displayEmpty
               disabled={disabled}
-              renderValue={(value) => {
-                return value === '' ? 'すべて' : {
-                  'high': '高',
-                  'medium': '中',
-                  'low': '低'
-                }[value]
+              renderValue={value => {
+                return value === ''
+                  ? 'すべて'
+                  : {
+                      high: '高',
+                      medium: '中',
+                      low: '低',
+                    }[value];
               }}
               sx={{
                 '& .MuiInputLabel-shrink': {
@@ -312,7 +312,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
                   paddingTop: '8px',
                   paddingBottom: '8px',
                   paddingLeft: '14px',
-                }
+                },
               }}
             >
               <MenuItem value="">すべて</MenuItem>
@@ -331,12 +331,12 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
             label="期限日（から）"
             value={filters.due_after || null}
             onChange={handleDueAfterChange}
-            slotProps={{ 
-              textField: { 
-                size: 'small', 
-                fullWidth: true, 
+            slotProps={{
+              textField: {
+                size: 'small',
+                fullWidth: true,
                 disabled: disabled,
-              }
+              },
             }}
             disabled={disabled}
           />
@@ -348,12 +348,12 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
             label="期限日（まで）"
             value={filters.due_before || null}
             onChange={handleDueBeforeChange}
-            slotProps={{ 
-              textField: { 
-                size: 'small', 
-                fullWidth: true, 
+            slotProps={{
+              textField: {
+                size: 'small',
+                fullWidth: true,
                 disabled: disabled,
-              }
+              },
             }}
             disabled={disabled}
           />
@@ -361,11 +361,13 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
       </Grid>
 
       {/* ルーティンタスク切り替え */}
-      <Box sx={{ 
-        mt: 2,
-        display: 'flex',
-        alignItems: 'center'
-      }}>
+      <Box
+        sx={{
+          mt: 2,
+          display: 'flex',
+          alignItems: 'center',
+        }}
+      >
         <FormControlLabel
           control={
             <Switch
@@ -380,12 +382,14 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
       </Box>
 
       {/* ボタン部分 */}
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'flex-end',
-        mt: 3,
-        gap: 1
-      }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          mt: 3,
+          gap: 1,
+        }}
+      >
         <Button
           variant="outlined"
           size="small"
@@ -395,11 +399,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
           クリア
         </Button>
         {isMobile && (
-          <Button
-            variant="contained"
-            size="small"
-            onClick={() => setDrawerOpen(false)}
-          >
+          <Button variant="contained" size="small" onClick={() => setDrawerOpen(false)}>
             適用
           </Button>
         )}
@@ -419,23 +419,25 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
           borderTopLeftRadius: 16,
           borderTopRightRadius: 16,
           p: 2,
-        }
+        },
       }}
     >
       {/* ドロワーヘッダー */}
-      <Box sx={{ 
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        mb: 2
-      }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 2,
+        }}
+      >
         <Typography variant="h6">フィルター</Typography>
         <IconButton onClick={() => setDrawerOpen(false)}>
           <CloseIcon />
         </IconButton>
       </Box>
       <Divider sx={{ mb: 2 }} />
-      
+
       {/* フィルターフォーム */}
       {filterFormContent}
     </Drawer>
@@ -444,37 +446,41 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
   return (
     <>
       {/* フィルターヘッダー（デスクトップ・モバイル共通） */}
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: 1,
-        mb: isTablet ? 1 : 2
-      }}>
-        {/* 左側：フィルタータイトルと適用されているフィルターのチップ */}
-        <Box sx={{ 
-          display: 'flex', 
+      <Box
+        sx={{
+          display: 'flex',
           alignItems: 'center',
-          gap: 1,
+          justifyContent: 'space-between',
           flexWrap: 'wrap',
-          flex: 1,
-        }}>
+          gap: 1,
+          mb: isTablet ? 1 : 2,
+        }}
+      >
+        {/* 左側：フィルタータイトルと適用されているフィルターのチップ */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            flexWrap: 'wrap',
+            flex: 1,
+          }}
+        >
           <Button
             startIcon={<FilterListIcon />}
-            variant={activeFilterCount > 0 ? "contained" : "outlined"}
+            variant={activeFilterCount > 0 ? 'contained' : 'outlined'}
             onClick={toggleExpanded}
             size="small"
-            color={activeFilterCount > 0 ? "primary" : "inherit"}
+            color={activeFilterCount > 0 ? 'primary' : 'inherit'}
             sx={{
               borderRadius: '20px',
-              mb: isTablet ? 1 : 0
+              mb: isTablet ? 1 : 0,
             }}
             disabled={disabled}
           >
             {activeFilterCount > 0 ? `フィルター (${activeFilterCount})` : 'フィルター'}
           </Button>
-          
+
           {/* アクティブなフィルターのチップ表示 */}
           {!isMobile && (
             <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
@@ -482,7 +488,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
             </Stack>
           )}
         </Box>
-        
+
         {/* 右側：デスクトップ用の開閉ボタン（モバイルでは非表示） */}
         {!isMobile && activeFilterCount > 0 && (
           <Button

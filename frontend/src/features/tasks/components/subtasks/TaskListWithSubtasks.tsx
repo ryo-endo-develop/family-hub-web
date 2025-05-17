@@ -25,8 +25,7 @@ import {
   Typography,
   Chip,
 } from '@mui/material';
-import { format } from 'date-fns';
-import { ja } from 'date-fns/locale';
+import { format , ja } from 'date-fns';
 
 import { Task } from '../../types';
 

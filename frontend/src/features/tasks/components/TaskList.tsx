@@ -14,7 +14,6 @@ import {
   Card,
   CardContent,
   Chip,
-  Grid,
   IconButton,
   Paper,
   Table,
@@ -28,10 +27,8 @@ import {
   useMediaQuery,
   useTheme,
   Stack,
-  Divider,
 } from '@mui/material';
-import { format } from 'date-fns';
-import { ja } from 'date-fns/locale';
+import { format, ja } from 'date-fns';
 
 import { Task } from '../types';
 
@@ -61,7 +58,7 @@ const TaskList = ({
   // レスポンシブ対応のためのフック
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
+
   // ステータスに応じた表示を返す
   const getStatusDisplay = (status: string) => {
     switch (status) {
@@ -86,14 +83,7 @@ const TaskList = ({
           />
         );
       default:
-        return (
-          <Chip
-            label="未着手"
-            size="small"
-            color="default"
-            variant="outlined"
-          />
-        );
+        return <Chip label="未着手" size="small" color="default" variant="outlined" />;
     }
   };
 
@@ -111,30 +101,16 @@ const TaskList = ({
           />
         );
       case 'medium':
-        return (
-          <Chip
-            label="中"
-            size="small"
-            color="warning"
-            variant="outlined"
-          />
-        );
+        return <Chip label="中" size="small" color="warning" variant="outlined" />;
       default:
-        return (
-          <Chip
-            label="低"
-            size="small"
-            color="default"
-            variant="outlined"
-          />
-        );
+        return <Chip label="低" size="small" color="default" variant="outlined" />;
     }
   };
 
   // 期限日の表示
   const getDueDateDisplay = (dueDate: string | Date | null) => {
     if (!dueDate) return '-';
-    
+
     try {
       // 文字列またはDate型に対応
       const date = typeof dueDate === 'string' ? new Date(dueDate) : dueDate;
@@ -161,13 +137,11 @@ const TaskList = ({
       {tasks.length === 0 ? (
         <Card>
           <CardContent sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="body1">
-              タスクが見つかりません
-            </Typography>
+            <Typography variant="body1">タスクが見つかりません</Typography>
           </CardContent>
         </Card>
       ) : (
-        tasks.map((task) => (
+        tasks.map(task => (
           <Card key={task.id} sx={{ position: 'relative' }}>
             <CardContent sx={{ pb: 0 }}>
               {/* タイトルと特殊タイプバッジ */}
@@ -190,13 +164,13 @@ const TaskList = ({
                   />
                 )}
               </Typography>
-              
+
               {/* ステータスと優先度 */}
               <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
                 {getStatusDisplay(task.status)}
                 {getPriorityDisplay(task.priority)}
               </Stack>
-              
+
               {/* 期限日 */}
               {task.due_date && (
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -206,7 +180,7 @@ const TaskList = ({
                   </Typography>
                 </Box>
               )}
-              
+
               {/* 担当者 */}
               {task.assignee && (
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -216,13 +190,13 @@ const TaskList = ({
                   </Typography>
                 </Box>
               )}
-              
+
               {/* タグ一覧 */}
               {task.tags.length > 0 && (
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
                   <TagIcon fontSize="small" color="action" sx={{ mr: 1, mt: 0.5 }} />
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {task.tags.map((tag) => (
+                    {task.tags.map(tag => (
                       <Chip
                         key={tag.id}
                         label={tag.name}
@@ -239,7 +213,7 @@ const TaskList = ({
                 </Box>
               )}
             </CardContent>
-            
+
             {/* アクションボタン */}
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1 }}>
               {onAddSubtask && (
@@ -252,11 +226,7 @@ const TaskList = ({
                   <AddIcon fontSize="small" />
                 </IconButton>
               )}
-              <IconButton
-                aria-label="編集"
-                size="small"
-                onClick={() => onEdit(task)}
-              >
+              <IconButton aria-label="編集" size="small" onClick={() => onEdit(task)}>
                 <EditIcon fontSize="small" />
               </IconButton>
               <IconButton
@@ -299,40 +269,26 @@ const TaskList = ({
               </TableCell>
             </TableRow>
           ) : (
-            tasks.map((task) => (
+            tasks.map(task => (
               <TableRow key={task.id} hover>
                 <TableCell component="th" scope="row">
                   <Typography variant="body1">{task.title}</Typography>
                   {task.is_routine && (
-                    <Chip
-                      label="ルーティン"
-                      size="small"
-                      color="secondary"
-                      sx={{ ml: 1 }}
-                    />
+                    <Chip label="ルーティン" size="small" color="secondary" sx={{ ml: 1 }} />
                   )}
                   {task.parent_id && (
-                    <Chip
-                      label="サブタスク"
-                      size="small"
-                      color="info"
-                      sx={{ ml: 1 }}
-                    />
+                    <Chip label="サブタスク" size="small" color="info" sx={{ ml: 1 }} />
                   )}
                 </TableCell>
                 <TableCell>{getStatusDisplay(task.status)}</TableCell>
                 <TableCell>{getPriorityDisplay(task.priority)}</TableCell>
                 <TableCell>{getDueDateDisplay(task.due_date)}</TableCell>
                 <TableCell>
-                  {task.assignee ? (
-                    `${task.assignee.last_name} ${task.assignee.first_name}`
-                  ) : (
-                    '-'
-                  )}
+                  {task.assignee ? `${task.assignee.last_name} ${task.assignee.first_name}` : '-'}
                 </TableCell>
                 <TableCell>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {task.tags.map((tag) => (
+                    {task.tags.map(tag => (
                       <Chip
                         key={tag.id}
                         label={tag.name}
@@ -356,11 +312,7 @@ const TaskList = ({
                       <AddIcon fontSize="small" />
                     </IconButton>
                   )}
-                  <IconButton
-                    aria-label="編集"
-                    size="small"
-                    onClick={() => onEdit(task)}
-                  >
+                  <IconButton aria-label="編集" size="small" onClick={() => onEdit(task)}>
                     <EditIcon fontSize="small" />
                   </IconButton>
                   <IconButton
@@ -384,7 +336,7 @@ const TaskList = ({
     <Paper elevation={1}>
       {/* デバイスサイズに応じてビューを切り替え */}
       {isMobile ? renderMobileTaskList() : renderDesktopTaskList()}
-      
+
       {/* ページネーション */}
       <TablePagination
         component="div"
