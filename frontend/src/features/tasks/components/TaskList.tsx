@@ -229,6 +229,7 @@ const TaskList = ({
                         size="small"
                         sx={{
                           backgroundColor: tag.color || undefined,
+                          color: '#ffffff',
                           height: 20,
                           fontSize: '0.7rem',
                         }}
@@ -338,6 +339,7 @@ const TaskList = ({
                         size="small"
                         sx={{
                           backgroundColor: tag.color || undefined,
+                          color: '#ffffff',
                         }}
                       />
                     ))}

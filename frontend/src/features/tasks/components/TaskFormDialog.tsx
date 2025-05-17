@@ -57,43 +57,54 @@ interface TaskFormDialogProps {
   familyId: string;
 }
 
-// テーマに沿ったタグカラーパレット
-const themeColors = {
-  primary: {
-    light: '#7986cb',
-    main: '#3f51b5',
-    dark: '#303f9f',
+// 落ち着いた中間色調のタグカラーパレット
+const tagPalette = {
+  // メインカラー (落ち着いた中間色調)
+  blue: '#5c6bc0',     // 落ち着いたブルー
+  teal: '#26a69a',     // 落ち着いたティール
+  green: '#66bb6a',    // 落ち着いたグリーン
+  amber: '#ffca28',    // 落ち着いたアンバー
+  orange: '#ffa726',   // 落ち着いたオレンジ
+  red: '#ef5350',      // 落ち着いたレッド
+  pink: '#ec407a',     // 落ち着いたピンク
+  purple: '#ab47bc',   // 落ち着いたパープル
+  indigo: '#5c6bc0',   // 落ち着いたインディゴ
+  deepPurple: '#7e57c2', // 深いパープル
+  cyan: '#4dd0e1',     // シアン
+  blueGrey: '#78909c', // ブルーグレー
+  
+  // 暗いカラーパレット (白いテキスト用)
+  dark: {
+    blue: '#3949ab',    // 暗めのブルー
+    teal: '#00796b',    // 暗めのティール
+    green: '#2e7d32',   // 暗めのグリーン
+    red: '#d32f2f',     // 暗めのレッド
+    purple: '#7b1fa2',  // 暗めのパープル
+    brown: '#5d4037',   // 暗めのブラウン
+    blueGrey: '#455a64' // 暗めのブルーグレー
   },
-  secondary: {
-    light: '#ff4081',
-    main: '#f50057',
-    dark: '#c51162',
-  },
-  accent: {
-    light: '#4dd0e1',
-    main: '#00bcd4',
-    dark: '#0097a7',
-  },
-  success: {
-    light: '#81c784',
-    main: '#4caf50',
-    dark: '#388e3c',
-  },
-  warning: {
-    light: '#ffb74d',
-    main: '#ff9800',
-    dark: '#f57c00',
-  },
-  error: {
-    light: '#e57373',
-    main: '#f44336',
-    dark: '#d32f2f',
-  },
-  grey: {
-    light: '#e0e0e0',
-    main: '#9e9e9e',
-    dark: '#616161',
-  },
+  
+  // コントラスト色計算用
+  isDark: (color: string): boolean => {
+    // 簡易的な明度判定（背景色の明るさに基づいて文字色を選ぶ）
+    if (!color || !color.startsWith('#')) return false;
+    
+    // 16進数のカラーコードを解析（短縮形も対応）
+    let r, g, b;
+    if (color.length === 4) {
+      r = parseInt(color.charAt(1) + color.charAt(1), 16);
+      g = parseInt(color.charAt(2) + color.charAt(2), 16);
+      b = parseInt(color.charAt(3) + color.charAt(3), 16);
+    } else {
+      r = parseInt(color.substring(1, 3), 16);
+      g = parseInt(color.substring(3, 5), 16);
+      b = parseInt(color.substring(5, 7), 16);
+    }
+    
+    // YIQを使った明度計算（明度が145未満は暗い色と判定 - より安全なコントラストのために閾値を上げた）
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    return yiq < 145;
+  }
 };
 
 const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) => {
@@ -134,34 +145,40 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
   const currentTitle = watch('title');
 
   // タグの色を取得するヘルパー関数
-  // タグごとに一貫した色を生成するためにIDを使用
-  const getTagColor = useCallback((tag: Tag, isSelected: boolean) => {
+  // タグごとに一貫した落ち着いた色を生成
+  const getTagColor = useCallback((tag: Tag, isSelected: boolean, useDarkVariant: boolean = false) => {
     if (isSelected) {
-      return undefined; // 選択時はカラープロパティをそのまま使用
+      return undefined; // 選択時はMUIが適用するカラーを使用
     }
 
-    // タグに色が設定されている場合はそれを使用
+    // タグに色が設定されている場合はそれをベースにする
     if (tag.color) {
-      // 各カラーカテゴリとの距離を計算し、最も近い色を選ぶ
-      // 簡易実装として各タグに固有の色を割り当てる
-      const tagId = tag.id;
-      const colorSeed = tagId.charCodeAt(0) + tagId.charCodeAt(tagId.length - 1);
-      
-      // カラーパレットから6種類の色を選択
-      const colorKeys = ['primary', 'secondary', 'accent', 'success', 'warning', 'error'];
-      const selectedColor = colorKeys[colorSeed % colorKeys.length];
-      
-      // 明るさも3段階から選択
-      const shadeKeys = ['light', 'main', 'dark'];
-      const selectedShade = shadeKeys[(colorSeed >> 4) % shadeKeys.length];
-      
-      // @ts-ignore
-      return themeColors[selectedColor][selectedShade];
+      // 有効なHEXカラーコードが設定されていればそのまま使用
+      if (tag.color.startsWith('#') && (tag.color.length === 7 || tag.color.length === 4)) {
+        return tag.color;
+      }
     }
     
-    // 色が未設定の場合はデフォルト色
-    return theme.palette.grey[300];
-  }, [theme]);
+    // タグIDを使って一貫した色を生成
+    const tagId = tag.id || 'default';
+    const seed = tagId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    
+    // 暗いバージョンがリクエストされた場合は、darkパレットから選択
+    if (useDarkVariant) {
+      const darkColorKeys = Object.keys(tagPalette.dark);
+      const darkColorKey = darkColorKeys[seed % darkColorKeys.length];
+      // @ts-ignore
+      return tagPalette.dark[darkColorKey];
+    }
+    
+    // 通常はメインパレットから選択
+    const colorKeys = Object.keys(tagPalette).filter(key => 
+      key !== 'isDark' && key !== 'dark' // 関数とdarkパレットを除外
+    );
+    const colorKey = colorKeys[seed % colorKeys.length];
+    // @ts-ignore
+    return tagPalette[colorKey];
+  }, []);
 
   // 家族メンバーとタグを取得する関数
   const fetchFamilyData = useCallback(async (familyId: string) => {
@@ -510,25 +527,53 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
                 ) : (
                   tags.map((tag) => {
                     const isSelected = selectedTagIds.includes(tag.id);
-                    const tagColor = getTagColor(tag, isSelected);
                     
                     return (
                       <Chip
                         key={tag.id}
                         label={tag.name}
                         onClick={() => handleTagToggle(tag.id)}
+                        size="small"
                         color={isSelected ? "primary" : "default"}
                         variant={isSelected ? "filled" : "outlined"}
                         sx={{
-                          bgcolor: isSelected ? undefined : tagColor,
-                          borderColor: isSelected ? undefined : tagColor,
-                          color: isSelected ? undefined : 
-                                  // カラーパレットの暗い色の場合は白文字にする
-                                  tagColor && tagColor.toLowerCase().includes('dark') ? '#fff' : 'inherit',
+                          // タグの色を取得
+                          bgcolor: isSelected ? undefined : getTagColor(tag, isSelected),
+                          borderColor: isSelected ? undefined : getTagColor(tag, isSelected),
+                          // 明度に基づいて適切な文字色を選択 - 明るい背景色には暗い文字を使用
+                          color: (() => {
+                            if (isSelected) return undefined;
+                            
+                            const color = getTagColor(tag, isSelected);
+                            if (!color) return 'rgba(0, 0, 0, 0.87)';
+                            
+                            // 明るい背景色には濃い新字の黒を使い、暗い背景色には白を使う
+                            return tagPalette.isDark(color) ? '#ffffff' : 'rgba(0, 0, 0, 0.87)';
+                          })(),
+                          // アニメーションとホバー時の効果
+                          transition: 'all 0.15s ease-in-out',
+                          transform: isSelected ? 'scale(1.03)' : 'scale(1)',
+                          fontWeight: isSelected ? 600 : 500,
+                          boxShadow: isSelected ? '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)' : 'none',
                           '&:hover': {
+                            // ホバー時は兄弟に透明度を下げる
                             bgcolor: isSelected ? undefined : 
-                                   tagColor ? `${tagColor}99` : undefined, // 透明度を追加
+                              (color => color ? `${color}` : undefined)(getTagColor(tag, isSelected)),
+                            opacity: 0.85,
+                            transform: 'scale(1.03)',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
                           },
+                          // 丸みを萬道で高すぎないように調整
+                          borderRadius: '12px',
+                          px: 1.2,
+                          py: 0.4,
+                          height: 'auto',
+                          minHeight: '24px',
+                          // 選択状態をより明確に
+                          ...(isSelected && {
+                            fontWeight: 600,
+                            letterSpacing: '0.01em',
+                          })
                         }}
                       />
                     );

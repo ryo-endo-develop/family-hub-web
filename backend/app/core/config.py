@@ -22,6 +22,16 @@ class Settings(BaseSettings):
     # デバッグモード
     DEBUG: Optional[bool] = None
 
+    # デフォルトタグ設定
+    DEFAULT_TAGS: list = [
+        {"name": "重要", "color": "#f44336"},  # 赤
+        {"name": "買い物", "color": "#4caf50"},  # 緑
+        {"name": "家事", "color": "#3f51b5"},  # 青
+        {"name": "育児", "color": "#ff9800"},  # 橙
+        {"name": "仕事", "color": "#9c27b0"},  # 紫
+        {"name": "趣味", "color": "#00bcd4"},  # 水色
+    ]
+
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     def assemble_cors_origins(cls, v: Optional[List[str]]) -> List[AnyHttpUrl]:
         if isinstance(v, str) and not v.startswith("["):

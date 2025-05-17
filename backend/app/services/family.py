@@ -5,15 +5,18 @@ from fastapi import HTTPException, status
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.crud.family import (
     create_family,
     get_family_by_id,
     is_user_family_admin,
     is_user_family_member,
 )
+from app.crud.task import tag as tag_crud  # TagのCRUD
 from app.crud.user import get_user_by_email
 from app.models.family import Family, FamilyMember
 from app.schemas.family import FamilyCreate, FamilyMemberCreate
+from app.schemas.task import TagCreate  # TagCreateスキーマを追加
 
 
 async def create_family_with_admin(
@@ -21,6 +24,7 @@ async def create_family_with_admin(
 ) -> Family:
     """
     新しい家族を作成し、作成者を管理者として追加する
+    また、デフォルトのタグも作成する
     """
     try:
         # 家族を作成（直接モデルを作成）
@@ -37,6 +41,16 @@ async def create_family_with_admin(
         )
         db.add(family_member)
         
+        # デフォルトタグを作成
+        for tag_data in settings.DEFAULT_TAGS:
+            tag_create = TagCreate(
+                name=tag_data["name"],
+                color=tag_data["color"],
+                family_id=family.id
+            )
+            # tag_crud.createは自身でdb.addとdb.commitを行うので、トランザクション内では、awaitするだけとする
+            await tag_crud.create(db, obj_in=tag_create)
+            
         # 一つのトランザクションでコミット
         await db.commit()
         await db.refresh(family)  # 最新の状態を取得
