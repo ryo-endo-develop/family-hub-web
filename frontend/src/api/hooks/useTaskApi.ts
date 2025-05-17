@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 
-import apiClient from '../client';
 import {
   Task,
   TaskCreate,
@@ -9,6 +8,7 @@ import {
   TaskUpdate,
   SubtaskCreate,
 } from '../../features/tasks/types';
+import apiClient from '../client';
 
 /**
  * タスクAPI操作のためのフック
@@ -67,7 +67,7 @@ export const useTaskApi = () => {
             return response.data.data;
           }
         }
-        
+
         setError('APIレスポンスの形式が不正です');
         return null;
       } catch (err: any) {
@@ -127,7 +127,7 @@ export const useTaskApi = () => {
             total: response.data.total || response.data.data.length,
           };
         }
-        
+
         setError('APIレスポンスの形式が不正です');
         return null;
       } catch (err: any) {
@@ -216,85 +216,88 @@ export const useTaskApi = () => {
   /**
    * サブタスクを作成（新規）
    */
-  const createSubtask = useCallback(async (
-    parent_id: string,
-    subtask: SubtaskCreate
-  ): Promise<Task | null> => {
-    setLoading(true);
-    setError(null);
+  const createSubtask = useCallback(
+    async (parent_id: string, subtask: SubtaskCreate): Promise<Task | null> => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      // 日付フォーマットの調整
-      const formattedTask = {
-        ...subtask,
-        due_date: subtask.due_date ? subtask.due_date.toISOString().split('T')[0] : null,
-      };
+      try {
+        // 日付フォーマットの調整
+        const formattedTask = {
+          ...subtask,
+          due_date: subtask.due_date ? subtask.due_date.toISOString().split('T')[0] : null,
+        };
 
-      const response = await apiClient.post(`/tasks/${parent_id}/subtasks`, formattedTask);
-      return response.data.data;
-    } catch (err: any) {
-      console.error('サブタスク作成エラー:', err);
-      const message = err.response?.data?.detail || 'サブタスクの作成に失敗しました';
-      setError(message);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+        const response = await apiClient.post(`/tasks/${parent_id}/subtasks`, formattedTask);
+        return response.data.data;
+      } catch (err: any) {
+        console.error('サブタスク作成エラー:', err);
+        const message = err.response?.data?.detail || 'サブタスクの作成に失敗しました';
+        setError(message);
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
   /**
    * タスクを更新（既存の関数）
    */
-  const updateTask = useCallback(async (task_id: string, task: TaskUpdate): Promise<Task | null> => {
-    setLoading(true);
-    setError(null);
+  const updateTask = useCallback(
+    async (task_id: string, task: TaskUpdate): Promise<Task | null> => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      console.log('updateTask called with:', task_id, task);
-      console.log('due_date before formatting:', task.due_date, typeof task.due_date);
-      
-      // 日付データの有効性チェック
-      let due_date = null;
-      if (task.due_date) {
-        if (task.due_date instanceof Date) {
-          // toISOStringがタイムゾーン付きのUTC日付に変換するので、日付部分だけを取得
-          due_date = task.due_date.toISOString().split('T')[0];
-        } else if (typeof task.due_date === 'string') {
-          // すでに文字列の場合はそのまま使用
-          due_date = task.due_date;
-        } else {
-          console.error('Unknown date format:', task.due_date);
-          due_date = null;
+      try {
+        console.log('updateTask called with:', task_id, task);
+        console.log('due_date before formatting:', task.due_date, typeof task.due_date);
+
+        // 日付データの有効性チェック
+        let due_date = null;
+        if (task.due_date) {
+          if (task.due_date instanceof Date) {
+            // toISOStringがタイムゾーン付きのUTC日付に変換するので、日付部分だけを取得
+            due_date = task.due_date.toISOString().split('T')[0];
+          } else if (typeof task.due_date === 'string') {
+            // すでに文字列の場合はそのまま使用
+            due_date = task.due_date;
+          } else {
+            console.error('Unknown date format:', task.due_date);
+            due_date = null;
+          }
         }
-      }
-      
-      // 日付フォーマットの調整
-      const formattedTask = {
-        ...task,
-        due_date,
-      };
-      
-      console.log('Sending formatted task:', formattedTask);
 
-      const response = await apiClient.put(`/tasks/${task_id}`, formattedTask);
-      return response.data.data;
-    } catch (err: any) {
-      console.error('タスク更新エラー:', err);
-      // レスポンスの詳細をログ出力
-      if (err.response) {
-        console.error('Error response:', {
-          status: err.response.status,
-          headers: err.response.headers,
-          data: err.response.data
-        });
+        // 日付フォーマットの調整
+        const formattedTask = {
+          ...task,
+          due_date,
+        };
+
+        console.log('Sending formatted task:', formattedTask);
+
+        const response = await apiClient.put(`/tasks/${task_id}`, formattedTask);
+        return response.data.data;
+      } catch (err: any) {
+        console.error('タスク更新エラー:', err);
+        // レスポンスの詳細をログ出力
+        if (err.response) {
+          console.error('Error response:', {
+            status: err.response.status,
+            headers: err.response.headers,
+            data: err.response.data,
+          });
+        }
+        const message = err.response?.data?.detail || 'タスクの更新に失敗しました';
+        setError(message);
+        return null;
+      } finally {
+        setLoading(false);
       }
-      const message = err.response?.data?.detail || 'タスクの更新に失敗しました';
-      setError(message);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   /**
    * タスクを削除（既存の関数）

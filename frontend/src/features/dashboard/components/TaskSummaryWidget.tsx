@@ -1,3 +1,6 @@
+import { useState, useEffect } from 'react';
+
+import { Assignment as AssignmentIcon } from '@mui/icons-material';
 import {
   Badge,
   Card,
@@ -11,11 +14,10 @@ import {
   ListItemText,
   Typography,
 } from '@mui/material';
-import { Assignment as AssignmentIcon } from '@mui/icons-material';
-import { useState, useEffect } from 'react';
+
 import { useTaskApi } from '../../../api/hooks/useTaskApi';
-import { Task } from '../../tasks/types';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { Task } from '../../tasks/types';
 
 interface TaskSummaryWidgetProps {
   familyId: string;

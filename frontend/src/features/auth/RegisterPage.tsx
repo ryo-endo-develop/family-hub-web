@@ -1,3 +1,6 @@
+import { useEffect } from 'react';
+
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert,
   Box,
@@ -10,14 +13,13 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useEffect } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
+
+import { useAppDispatch, useAppSelector } from '../../hooks/reduxHooks';
 
 import { RegisterData, clearError, register as registerUser } from './authSlice';
-import { useAppDispatch, useAppSelector } from '../../hooks/reduxHooks';
 
 // バリデーションスキーマ
 const registerSchema = z

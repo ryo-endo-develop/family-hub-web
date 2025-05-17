@@ -1,8 +1,9 @@
 import { useEffect, useCallback, useState } from 'react';
+
 import { useDispatch, useSelector } from 'react-redux';
 
-import { checkAuth } from '../features/auth/authSlice';
 import { RootState } from '../app/store';
+import { checkAuth } from '../features/auth/authSlice';
 
 /**
  * 認証状態を管理するフック

@@ -1,3 +1,6 @@
+import { useEffect, useState } from 'react';
+
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
   Checkbox,
@@ -16,13 +19,11 @@ import {
   Typography,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
-import { useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 
 import { useTaskApi } from '../../../../api/hooks/useTaskApi';
-import { SubtaskCreate, Task, subtaskCreateSchema } from '../../types';
 import { useAppSelector } from '../../../../hooks/reduxHooks';
+import { SubtaskCreate, Task, subtaskCreateSchema } from '../../types';
 
 interface SubtaskFormDialogProps {
   open: boolean;
@@ -31,13 +32,19 @@ interface SubtaskFormDialogProps {
 }
 
 const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps) => {
-  const { user } = useAppSelector((state) => state.auth);
+  const { user } = useAppSelector(state => state.auth);
   const taskApi = useTaskApi();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // React Hook Formの設定
-  const { control, handleSubmit, reset, watch, formState: { errors } } = useForm<SubtaskCreate>({
+  const {
+    control,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<SubtaskCreate>({
     resolver: zodResolver(subtaskCreateSchema),
     defaultValues: {
       title: '',
@@ -71,32 +78,30 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
   }, [open, reset]);
 
   // フォーム送信ハンドラ
-  const onSubmit: SubmitHandler<SubtaskCreate> = async (data) => {
+  const onSubmit: SubmitHandler<SubtaskCreate> = async data => {
     setSubmitting(true);
     setError(null);
-    
+
     try {
       // 日付の処理
       if (data.due_date && !(data.due_date instanceof Date)) {
         try {
           data.due_date = new Date(data.due_date);
         } catch (e) {
-          console.error("日付変換エラー:", e);
           data.due_date = null;
         }
       }
-      
+
       // サブタスク作成
       const result = await taskApi.createSubtask(parentTask.id, data);
       if (!result && taskApi.error) {
         setError(taskApi.error);
         return;
       }
-      
+
       // 更新があったことを通知し、タイトルも渡す
       onClose(true, data.title);
     } catch (error: any) {
-      console.error('Failed to save subtask:', error);
       setError(error.message || 'サブタスクの保存に失敗しました');
     } finally {
       setSubmitting(false);
@@ -117,14 +122,14 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
             親タスク: {parentTask.title}
           </Typography>
         </DialogTitle>
-        
+
         <DialogContent>
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
             </Alert>
           )}
-          
+
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12}>
               <Controller
@@ -142,7 +147,7 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
                 )}
               />
             </Grid>
-            
+
             <Grid item xs={12}>
               <Controller
                 name="description"
@@ -160,7 +165,7 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
                 )}
               />
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <Controller
                 name="status"
@@ -182,7 +187,7 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
                 )}
               />
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <Controller
                 name="priority"
@@ -204,7 +209,7 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
                 )}
               />
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <Controller
                 name="due_date"
@@ -213,13 +218,12 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
                   <DatePicker
                     label="期限日"
                     value={field.value}
-                    onChange={(newValue) => {
+                    onChange={newValue => {
                       // nullまたはDateオブジェクトを確実に渡す
                       if (newValue && !(newValue instanceof Date)) {
                         try {
                           field.onChange(new Date(newValue));
                         } catch (e) {
-                          console.error("日付変換エラー:", e);
                           field.onChange(null);
                         }
                       } else {
@@ -237,7 +241,7 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
                 )}
               />
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <Controller
                 name="is_routine"
@@ -247,7 +251,7 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
                     control={
                       <Checkbox
                         checked={field.value}
-                        onChange={(e) => field.onChange(e.target.checked)}
+                        onChange={e => field.onChange(e.target.checked)}
                       />
                     }
                     label="ルーティンタスク"
@@ -257,14 +261,10 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
             </Grid>
           </Grid>
         </DialogContent>
-        
+
         <DialogActions>
           <Button onClick={handleClose}>キャンセル</Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={submitting}
-          >
+          <Button type="submit" variant="contained" disabled={submitting}>
             {submitting ? '保存中...' : '作成'}
           </Button>
         </DialogActions>

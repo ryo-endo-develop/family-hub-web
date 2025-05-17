@@ -1,7 +1,7 @@
 import { createTheme, responsiveFontSizes } from '@mui/material/styles';
 
 // 基本テーマの作成
-let baseTheme = createTheme({
+const baseTheme = createTheme({
   palette: {
     primary: {
       light: '#7986cb',

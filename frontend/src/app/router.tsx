@@ -1,9 +1,10 @@
-import { CircularProgress } from '@mui/material';
 import { Suspense, lazy } from 'react';
+
+import { CircularProgress } from '@mui/material';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
-import MainLayout from '../layouts/MainLayout';
 import ProtectedRoute from '../components/atoms/ProtectedRoute';
+import MainLayout from '../layouts/MainLayout';
 
 // ページのLazy Loading
 const LoginPage = lazy(() => import('../features/auth/LoginPage'));

@@ -1,14 +1,16 @@
 import { useState } from 'react';
 
-import apiClient from '../client';
 import { LoginCredentials, RegisterData, User } from '../../features/auth/authSlice';
+import apiClient from '../client';
 
 export const useAuthApi = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // ログイン
-  const login = async (credentials: LoginCredentials): Promise<{ token: string; user: User } | null> => {
+  const login = async (
+    credentials: LoginCredentials,
+  ): Promise<{ token: string; user: User } | null> => {
     setLoading(true);
     setError(null);
     try {
@@ -24,14 +26,14 @@ export const useAuthApi = () => {
       });
 
       const { access_token } = response.data.data;
-      
+
       // ユーザー情報を取得
       const userResponse = await apiClient.get('/users/me', {
         headers: {
           Authorization: `Bearer ${access_token}`,
         },
       });
-      
+
       return {
         token: access_token,
         user: userResponse.data.data,

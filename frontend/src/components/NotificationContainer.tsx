@@ -1,5 +1,7 @@
 import React from 'react';
+
 import { Snackbar, Alert, Stack } from '@mui/material';
+
 import { useNotification } from '../contexts/NotificationContext';
 
 const NotificationContainer: React.FC = () => {

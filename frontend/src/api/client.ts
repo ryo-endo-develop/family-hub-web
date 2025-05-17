@@ -1,4 +1,5 @@
 import axios, { AxiosError } from 'axios';
+
 import { NotificationType } from '../contexts/NotificationContext';
 
 // グローバル通知ハンドラー
@@ -16,9 +17,6 @@ let accessToken: string | null = null;
 // アクセストークンを設定する関数
 export const setAccessToken = (token: string | null) => {
   accessToken = token;
-
-  // ログ出力（デバッグ用）
-  console.log(`アクセストークンを設定: ${token ? '有効' : '無効'}`);
 };
 
 // アクセストークンを取得する関数
@@ -51,9 +49,6 @@ apiClient.interceptors.request.use(
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
-
-    // リクエストログ（デバッグ用）
-    console.log(`API リクエスト: ${config.method?.toUpperCase()} ${config.url}`);
 
     return config;
   },
@@ -106,11 +101,12 @@ apiClient.interceptors.response.use(
 
     // ユーザーへの通知（401エラーでリフレッシュトークン周りのリクエストは除外）
     if (
-      error.response && 
-      !(error.response.status === 401 && 
-        (originalRequest.url?.includes('/auth/logout') || 
-         originalRequest.url?.includes('/auth/refresh') || 
-         originalRequest.url?.includes('/auth/session-check'))
+      error.response &&
+      !(
+        error.response.status === 401 &&
+        (originalRequest.url?.includes('/auth/logout') ||
+          originalRequest.url?.includes('/auth/refresh') ||
+          originalRequest.url?.includes('/auth/session-check'))
       )
     ) {
       const errorMessage = getErrorMessage(error);
@@ -131,11 +127,8 @@ apiClient.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
-      console.log('トークンの更新を試みます');
-
       // すでにリフレッシュ中なら、リフレッシュが完了するのを待つ
       if (isRefreshing) {
-        console.log('既にリフレッシュ処理中なので待機します');
         return new Promise((resolve, reject) => {
           pendingRequests.push({
             resolve,
@@ -147,7 +140,6 @@ apiClient.interceptors.response.use(
 
       // リフレッシュを開始
       isRefreshing = true;
-      console.log('リフレッシュ処理を開始します');
 
       try {
         // リフレッシュAPIを呼び出す
@@ -162,14 +154,12 @@ apiClient.interceptors.response.use(
         // 新しいアクセストークンを取得して保存
         const newAccessToken = response.data.data.access_token;
 
-        console.log('新しいアクセストークンを取得しました');
         setAccessToken(newAccessToken);
 
         // 元のリクエストのヘッダーを更新
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
         // 保留中のリクエストも新しいトークンで実行
-        console.log(`保留中のリクエスト数: ${pendingRequests.length}`);
         pendingRequests.forEach(request => {
           request.config.headers.Authorization = `Bearer ${newAccessToken}`;
           apiClient(request.config)
@@ -193,7 +183,6 @@ apiClient.interceptors.response.use(
         setAccessToken(null);
 
         // ログアウトハンドラーを呼び出す
-        console.log('認証エラーによりログアウト処理を実行します');
         logoutHandlers.forEach(handler => handler());
 
         return Promise.reject(error);

@@ -1,5 +1,5 @@
-import { Box, Button, Container, Typography } from '@mui/material';
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+import { Box, Button, Container, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
 const NotFoundPage = () => {

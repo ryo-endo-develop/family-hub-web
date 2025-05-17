@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
-import apiClient from '../client';
+
 import { Tag } from '../../features/tasks/types';
+import apiClient from '../client';
 
 export const useTagApi = () => {
   const [loading, setLoading] = useState(false);

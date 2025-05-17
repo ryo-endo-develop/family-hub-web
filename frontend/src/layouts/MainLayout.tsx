@@ -1,3 +1,17 @@
+import { useState } from 'react';
+
+import {
+  CalendarMonth as CalendarIcon,
+  Dashboard as DashboardIcon,
+  Event as EventIcon,
+  Logout as LogoutIcon,
+  Menu as MenuIcon,
+  People as PeopleIcon,
+  Person as PersonIcon,
+  RestaurantMenu as MenuPlanIcon,
+  Settings as SettingsIcon,
+  Task as TaskIcon,
+} from '@mui/icons-material';
 import {
   AppBar,
   Avatar,
@@ -15,23 +29,10 @@ import {
   Toolbar,
   Typography,
 } from '@mui/material';
-import {
-  CalendarMonth as CalendarIcon,
-  Dashboard as DashboardIcon,
-  Event as EventIcon,
-  Logout as LogoutIcon,
-  Menu as MenuIcon,
-  People as PeopleIcon,
-  Person as PersonIcon,
-  RestaurantMenu as MenuPlanIcon,
-  Settings as SettingsIcon,
-  Task as TaskIcon,
-} from '@mui/icons-material';
-import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
-import { useAppDispatch, useAppSelector } from '../hooks/reduxHooks';
 import { logout } from '../features/auth/authSlice';
+import { useAppDispatch, useAppSelector } from '../hooks/reduxHooks';
 
 // サイドバーの幅
 const drawerWidth = 240;

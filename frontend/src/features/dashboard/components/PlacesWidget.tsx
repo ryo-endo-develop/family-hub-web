@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, Chip, Grid, Typography } from '@mui/material';
 import { Place as PlaceIcon } from '@mui/icons-material';
+import { Card, CardContent, CardHeader, Chip, Grid, Typography } from '@mui/material';
 
 // ダミーデータ
 const dummyPlaces = [

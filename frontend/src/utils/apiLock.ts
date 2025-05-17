@@ -13,14 +13,14 @@ const apiLocks: Record<string, LockEntry> = {};
 export const isLocked = (operationKey: string): boolean => {
   const lock = apiLocks[operationKey];
   if (!lock) return false;
-  
+
   const now = Date.now();
   // 有効期限を過ぎていれば解除
   if (now > lock.expiresAt) {
     delete apiLocks[operationKey];
     return false;
   }
-  
+
   return true;
 };
 
@@ -31,26 +31,23 @@ export const lockOperation = (operationKey: string, durationMs: number = 5000): 
     timestamp: now,
     expiresAt: now + durationMs,
   };
-  console.log(`🔒 API操作 "${operationKey}" をロックしました (${durationMs}ms)`);
 };
 
 // ロックを解除
 export const unlockOperation = (operationKey: string): void => {
   delete apiLocks[operationKey];
-  console.log(`🔓 API操作 "${operationKey}" のロックを解除しました`);
 };
 
 // オペレーションを実行するか、既にロックされている場合はスキップ
 export const executeOnceOrSkip = async <T>(
-  operationKey: string, 
+  operationKey: string,
   operation: () => Promise<T>,
-  lockDuration: number = 5000
+  lockDuration: number = 5000,
 ): Promise<T | null> => {
   if (isLocked(operationKey)) {
-    console.log(`⏭️ API操作 "${operationKey}" はロック中のためスキップします`);
     return null;
   }
-  
+
   try {
     lockOperation(operationKey, lockDuration);
     return await operation();

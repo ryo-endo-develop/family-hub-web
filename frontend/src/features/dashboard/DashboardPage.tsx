@@ -1,11 +1,13 @@
-import { Grid, Typography, CircularProgress, Box, Alert } from '@mui/material';
 import { useEffect, useState } from 'react';
+
+import { Grid, Typography, CircularProgress, Box, Alert } from '@mui/material';
+
 import { useAppSelector } from '../../hooks/reduxHooks';
 
-import TaskSummaryWidget from './components/TaskSummaryWidget';
 import CalendarWidget from './components/CalendarWidget';
 import MenuWidget from './components/MenuWidget';
 import PlacesWidget from './components/PlacesWidget';
+import TaskSummaryWidget from './components/TaskSummaryWidget';
 
 const DashboardPage = () => {
   const [loading, setLoading] = useState(true);

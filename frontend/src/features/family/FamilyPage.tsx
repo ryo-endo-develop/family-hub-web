@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+
+import { Add as AddIcon, Person as PersonIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -15,15 +17,15 @@ import {
   IconButton,
   Snackbar,
 } from '@mui/material';
-import { Add as AddIcon, Person as PersonIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
-import { useAppDispatch, useAppSelector } from '../../hooks/reduxHooks';
-import { setCurrentFamily } from '../auth/authSlice';
 import { useFamilyApi, Family, FamilyMember } from '../../api/hooks/useFamilyApi';
 import { useNotification } from '../../contexts/NotificationContext';
-import CreateFamilyDialog from './components/CreateFamilyDialog';
+import { useAppDispatch, useAppSelector } from '../../hooks/reduxHooks';
+import { setCurrentFamily } from '../auth/authSlice';
+
 import AddMemberDialog from './components/AddMemberDialog';
+import CreateFamilyDialog from './components/CreateFamilyDialog';
 
 const FamilyPage = () => {
   const dispatch = useAppDispatch();

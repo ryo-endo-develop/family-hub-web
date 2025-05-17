@@ -1,16 +1,19 @@
-import { Box, Button, CircularProgress, Container, Typography, Alert, ToggleButtonGroup, ToggleButton, Paper, Fab, useMediaQuery, useTheme } from '@mui/material';
-import { Add as AddIcon, ViewList as ViewListIcon, AccountTree as AccountTreeIcon } from '@mui/icons-material';
 import { useCallback, useEffect, useState, useRef } from 'react';
 
-import { useAppSelector } from '../../hooks/reduxHooks';
+import { Add as AddIcon, ViewList as ViewListIcon, AccountTree as AccountTreeIcon } from '@mui/icons-material';
+import { Box, Button, CircularProgress, Container, Typography, Alert, ToggleButtonGroup, ToggleButton, Paper, Fab, useMediaQuery, useTheme } from '@mui/material';
+
 import { useTaskApi } from '../../api/hooks/useTaskApi';
-import { Task, TaskFilter } from './types';
-import TaskList from './components/TaskList';
+import { useNotification } from '../../contexts/NotificationContext';
+import { useAppSelector } from '../../hooks/reduxHooks';
+
+import SubtaskFormDialog from './components/subtasks/SubtaskFormDialog';
 import TaskListWithSubtasks from './components/subtasks/TaskListWithSubtasks';
 import TaskFilterPanel from './components/TaskFilterPanel';
 import TaskFormDialog from './components/TaskFormDialog';
-import SubtaskFormDialog from './components/subtasks/SubtaskFormDialog';
-import { useNotification } from '../../contexts/NotificationContext';
+import TaskList from './components/TaskList';
+import { Task, TaskFilter } from './types';
+
 
 // 表示モード
 type ViewMode = 'flat' | 'tree';
@@ -164,7 +167,7 @@ const TasksPage = () => {
     
     if (refreshNeeded) {
       // 成功通知を表示
-      const actionText = !!selectedTask ? '更新' : '作成';
+      const actionText = selectedTask ? '更新' : '作成';
       const title = taskTitle || (selectedTask?.title || 'タスク');
       
       addNotification({

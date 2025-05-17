@@ -179,8 +179,8 @@ async def create_demo_families(db: AsyncSession, users):
 async def create_demo_tags(db: AsyncSession, family_id):
     """デモタグを作成"""
     demo_tags = [
-        {"name": "重要", "color": "#FF0000", "family_id": family_id},
-        {"name": "買い物", "color": "#00FF00", "family_id": family_id},
+        {"name": "重要", "color": "#7986cb", "family_id": family_id},
+        {"name": "買い物", "color": "#ff4081", "family_id": family_id},
         {"name": "家事", "color": "#0000FF", "family_id": family_id},
         {"name": "育児", "color": "#FFFF00", "family_id": family_id},
         {"name": "仕事", "color": "#FF00FF", "family_id": family_id},
