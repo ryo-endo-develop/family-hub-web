@@ -111,7 +111,6 @@ const AddMemberDialog: React.FC<AddMemberDialogProps> = ({ open, familyId, onClo
                 error={!!errors.user_email}
                 helperText={errors.user_email?.message}
                 disabled={loading}
-                autoFocus
               />
             )}
           />

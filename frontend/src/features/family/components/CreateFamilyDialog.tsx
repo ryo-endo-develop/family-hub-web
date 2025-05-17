@@ -88,7 +88,6 @@ const CreateFamilyDialog: React.FC<CreateFamilyDialogProps> = ({ open, onClose }
                 error={!!errors.name}
                 helperText={errors.name?.message}
                 disabled={loading}
-                autoFocus
               />
             )}
           />
