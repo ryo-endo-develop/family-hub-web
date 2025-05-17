@@ -18,7 +18,7 @@ class UserBase(BaseModel):
 # リクエスト時に使用するモデル
 class UserCreate(BaseModel):
     email: EmailStr
-    password: str = Field(..., min_length=8)
+    password: str
     first_name: str
     last_name: str
     avatar_url: Optional[str] = None
@@ -29,20 +29,14 @@ class UserCreate(BaseModel):
         error_message = "パスワードは次の条件を満たす必要があります: "
         requirements = []
         
-        if len(v) < 8:
-            requirements.append("最低8文字以上")
-            
-        if not re.search(r'[A-Z]', v):
-            requirements.append("大文字を1文字以上")
-            
-        if not re.search(r'[a-z]', v):
-            requirements.append("小文字を1文字以上")
+        if len(v) < 6:
+            requirements.append("最低6文字以上")
             
         if not re.search(r'[0-9]', v):
             requirements.append("数字を1文字以上")
             
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', v):
-            requirements.append("特殊文字(!@#$%^&*(),.?\":{}|<>)を1文字以上")
+        if not re.search(r'[a-zA-Z]', v):
+            requirements.append("アルファベットを1文字以上")
         
         if requirements:
             error_message += ", ".join(requirements)
@@ -64,20 +58,14 @@ class UserUpdate(UserBase):
         error_message = "パスワードは次の条件を満たす必要があります: "
         requirements = []
         
-        if len(v) < 8:
-            requirements.append("最低8文字以上")
-            
-        if not re.search(r'[A-Z]', v):
-            requirements.append("大文字を1文字以上")
-            
-        if not re.search(r'[a-z]', v):
-            requirements.append("小文字を1文字以上")
+        if len(v) < 6:
+            requirements.append("最低6文字以上")
             
         if not re.search(r'[0-9]', v):
             requirements.append("数字を1文字以上")
             
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', v):
-            requirements.append("特殊文字(!@#$%^&*(),.?\":{}|<>)を1文字以上")
+        if not re.search(r'[a-zA-Z]', v):
+            requirements.append("アルファベットを1文字以上")
         
         if requirements:
             error_message += ", ".join(requirements)

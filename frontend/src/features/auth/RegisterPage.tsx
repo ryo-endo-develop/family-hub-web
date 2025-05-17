@@ -27,7 +27,15 @@ const registerSchema = z
     first_name: z.string().min(1, '名を入力してください'),
     last_name: z.string().min(1, '姓を入力してください'),
     email: z.string().email('有効なメールアドレスを入力してください'),
-    password: z.string().min(8, 'パスワードは8文字以上で入力してください'),
+    password: z
+      .string()
+      .min(6, 'パスワードは6文字以上で入力してください')
+      .refine((val) => /[0-9]/.test(val), {
+        message: 'パスワードには数字を1文字以上含めてください',
+      })
+      .refine((val) => /[a-zA-Z]/.test(val), {
+        message: 'パスワードにはアルファベットを1文字以上含めてください',
+      }),
     confirm_password: z.string().min(1, 'パスワード（確認）を入力してください'),
   })
   .refine((data) => data.password === data.confirm_password, {
@@ -165,17 +173,17 @@ const RegisterPage = () => {
                   />
                 </Grid>
                 <Grid item xs={12}>
-                  <TextField
-                    required
-                    fullWidth
-                    id="password"
-                    label="パスワード"
-                    type="password"
-                    autoComplete="new-password"
-                    {...register('password')}
-                    error={!!errors.password}
-                    helperText={errors.password?.message}
-                  />
+                <TextField
+                required
+                fullWidth
+                id="password"
+                label="パスワード"
+                type="password"
+                autoComplete="new-password"
+                {...register('password')}
+                error={!!errors.password}
+                helperText={errors.password?.message || 'パスワードは6文字以上で、数字と1文字以上のアルファベットを含む必要があります'}
+                />
                 </Grid>
                 <Grid item xs={12}>
                   <TextField

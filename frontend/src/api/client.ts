@@ -20,7 +20,7 @@ export const setAccessToken = (token: string | null) => {
   accessToken = token;
 
   // トークン設定をログからそのまま表示しない
-  console.log(`アクセストークンが${token ? '設定されました' : 'クリアされました'}`); 
+  console.log(`アクセストークンが${token ? '設定されました' : 'クリアされました'}`);
 };
 
 // アクセストークンを取得する関数
@@ -53,15 +53,17 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   config => {
     // セキュリティ対策を追加
-    
+
     // リクエスト前にアクセストークンをヘッダーに設定
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
-    
+
     // CSRF対策：フォームデータを送信する場合は状態を確認
-    if ((config.method === 'post' || config.method === 'put' || config.method === 'delete') && 
-        config.headers['Content-Type'] === 'application/x-www-form-urlencoded') {
+    if (
+      (config.method === 'post' || config.method === 'put' || config.method === 'delete') &&
+      config.headers['Content-Type'] === 'application/x-www-form-urlencoded'
+    ) {
       // CSRF対策としてヘッダーにリファラー情報を追加
       // これによりサーバー側でリファラーチェックが可能に
       config.headers['X-Requested-With'] = 'XMLHttpRequest';

@@ -38,9 +38,17 @@ async def register(user_in: UserCreate, db: Annotated[AsyncSession, Depends(get_
             detail="このメールアドレスは既に登録されています",
         )
 
-    # ユーザー作成
-    user = await create_user(db, user_in)
-    return Response(data=user, message="ユーザーを登録しました")
+    try:
+        # ユーザー作成
+        user = await create_user(db, user_in)
+        return Response(data=user, message="ユーザーを登録しました")
+    except ValueError as e:
+        # Pydanticのバリデーションエラーをキャッチしてわかりやすいメッセージを返す
+        # バリデーションエラーの場合、エラーメッセージをそのまま返す
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
 
 
 @router.post("/login", response_model=Response[Token])
