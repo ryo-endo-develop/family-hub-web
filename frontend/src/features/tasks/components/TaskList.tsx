@@ -118,12 +118,15 @@ const TaskList = ({
   };
 
   // 期限日の表示
-  const getDueDateDisplay = (dueDate: Date | null) => {
+  const getDueDateDisplay = (dueDate: string | Date | null) => {
     if (!dueDate) return '-';
     
     try {
-      return format(dueDate, 'yyyy/MM/dd', { locale: ja });
+      // 文字列またはDate型に対応
+      const date = typeof dueDate === 'string' ? new Date(dueDate) : dueDate;
+      return format(date, 'yyyy/MM/dd', { locale: ja });
     } catch (error) {
+      console.error('日付のフォーマットに失敗:', error, dueDate);
       return '-';
     }
   };

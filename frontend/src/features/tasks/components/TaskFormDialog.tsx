@@ -53,7 +53,7 @@ interface FamilyMember {
 interface TaskFormDialogProps {
   open: boolean;
   task: Task | null; // 編集時はタスクオブジェクト、新規作成時はnull
-  onClose: (refreshNeeded: boolean) => void;
+  onClose: (refreshNeeded: boolean, taskTitle?: string) => void;
   familyId: string;
 }
 
@@ -130,6 +130,8 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
 
   // 選択中のタグIDを監視
   const selectedTagIds = watch('tag_ids') || [];
+  // タイトルも監視
+  const currentTitle = watch('title');
 
   // タグの色を取得するヘルパー関数
   // タグごとに一貫した色を生成するためにIDを使用
@@ -183,7 +185,7 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
     } finally {
       setIsLoadingData(false);
     }
-  }, []);  // 空の依存配列で、fetchFamilyData関数の再生成を防ぐ
+  }, [familyApi, tagApi]);  // APIフックを依存配列に追加
 
   // ダイアログが開かれた時にデータを取得
   useEffect(() => {
@@ -254,17 +256,10 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
     // 念のため最新の家族IDを設定
     data.family_id = familyId;
     
-    // 日付形式のデバッグ出力
-    console.log("送信前のデータ:", data);
-    console.log("日付データ型:", data.due_date ? typeof data.due_date : "null");
-    console.log("日付値:", data.due_date);
-    
     if (data.due_date && !(data.due_date instanceof Date)) {
-      console.error("エラー: due_dateがDate型ではありません");
       // Date型に変換を試みる
       try {
         data.due_date = new Date(data.due_date);
-        console.log("変換後の日付:", data.due_date);
       } catch (e) {
         console.error("日付変換エラー:", e);
         data.due_date = null; // 変換失敗時はヌルに設定
@@ -277,7 +272,6 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
     try {
       if (task) {
         // タスク更新
-        console.log(`タスク更新実行: ${task.id}`, data);
         const result = await taskApi.updateTask(task.id, data);
         if (!result && taskApi.error) {
           setError(taskApi.error);
@@ -292,7 +286,8 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
         }
       }
       
-      onClose(true); // 更新があったことを通知
+      // 更新があったことを通知し、タイトルも渡す
+      onClose(true, data.title);
     } catch (error: any) {
       console.error('Failed to save task:', error);
       setError(error.message || 'タスクの保存に失敗しました');

@@ -10,6 +10,7 @@ import TaskListWithSubtasks from './components/subtasks/TaskListWithSubtasks';
 import TaskFilterPanel from './components/TaskFilterPanel';
 import TaskFormDialog from './components/TaskFormDialog';
 import SubtaskFormDialog from './components/subtasks/SubtaskFormDialog';
+import { useNotification } from '../../contexts/NotificationContext';
 
 // 表示モード
 type ViewMode = 'flat' | 'tree';
@@ -17,6 +18,7 @@ type ViewMode = 'flat' | 'tree';
 const TasksPage = () => {
   const { currentFamily } = useAppSelector(state => state.auth);
   const { getTasks, getRootTasks, deleteTask, loading: apiLoading, error: apiError } = useTaskApi();
+  const { addNotification } = useNotification();
 
   // フラグと状態の管理
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -116,25 +118,65 @@ const TasksPage = () => {
 
   // タスク削除ハンドラ
   const handleDeleteTask = async (taskId: string) => {
-    // 削除後、データを再取得する処理は子コンポーネントで実装
-    const success = await deleteTask(taskId);
-    if (success) {
-      fetchTasks();
+    try {
+      // 削除するタスクを特定
+      const taskToDelete = tasks.find(t => t.id === taskId);
+      const taskTitle = taskToDelete?.title || 'タスク';
+      
+      // 削除APIを呼び出し
+      const success = await deleteTask(taskId);
+      
+      if (success) {
+        // 成功通知を表示
+        addNotification({
+          type: 'success',
+          message: `タスク「${taskTitle}」を削除しました`,
+          duration: 3000
+        });
+        
+        // データを再取得
+        fetchTasks();
+      }
+    } catch (err) {
+      console.error('タスク削除中にエラーが発生しました:', err);
+      // エラー通知はAPI共通処理で表示されるためここでは追加しない
     }
   };
 
   // タスク作成/編集完了ハンドラ
-  const handleTaskFormClose = (refreshNeeded: boolean) => {
+  const handleTaskFormClose = (refreshNeeded: boolean, isUpdate = false, taskTitle?: string) => {
     setIsFormOpen(false);
+    
     if (refreshNeeded) {
+      // 成功通知を表示
+      const actionText = isUpdate ? '更新' : '作成';
+      const title = taskTitle || (selectedTask?.title || 'タスク');
+      
+      addNotification({
+        type: 'success',
+        message: `タスク「${title}」を${actionText}しました`,
+        duration: 3000
+      });
+      
       fetchTasks();
     }
   };
 
   // サブタスク作成完了ハンドラ
-  const handleSubtaskFormClose = (refreshNeeded: boolean) => {
+  const handleSubtaskFormClose = (refreshNeeded: boolean, taskTitle?: string) => {
     setIsSubtaskFormOpen(false);
+    
     if (refreshNeeded) {
+      // 成功通知を表示
+      const parentName = parentTask?.title || 'タスク';
+      const childName = taskTitle || 'サブタスク';
+      
+      addNotification({
+        type: 'success',
+        message: `「${parentName}」にサブタスク「${childName}」を追加しました`,
+        duration: 3000
+      });
+      
       fetchTasks();
     }
   };
@@ -306,7 +348,7 @@ const TasksPage = () => {
         <TaskFormDialog
           open={isFormOpen}
           task={selectedTask}
-          onClose={handleTaskFormClose}
+          onClose={(refreshNeeded, title) => handleTaskFormClose(refreshNeeded, !!selectedTask, title)}
           familyId={currentFamily.id}
         />
       )}

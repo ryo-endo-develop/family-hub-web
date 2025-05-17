@@ -27,7 +27,7 @@ import { useAppSelector } from '../../../../hooks/reduxHooks';
 interface SubtaskFormDialogProps {
   open: boolean;
   parentTask: Task; // 親タスク
-  onClose: (refreshNeeded: boolean) => void;
+  onClose: (refreshNeeded: boolean, taskTitle?: string) => void;
 }
 
 const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps) => {
@@ -37,7 +37,7 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
   const [error, setError] = useState<string | null>(null);
 
   // React Hook Formの設定
-  const { control, handleSubmit, reset, formState: { errors } } = useForm<SubtaskCreate>({
+  const { control, handleSubmit, reset, watch, formState: { errors } } = useForm<SubtaskCreate>({
     resolver: zodResolver(subtaskCreateSchema),
     defaultValues: {
       title: '',
@@ -50,6 +50,9 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
       tag_ids: [],
     },
   });
+
+  // タイトルを監視
+  const currentTitle = watch('title');
 
   // ダイアログが開くたびにフォームをリセット
   useEffect(() => {
@@ -73,6 +76,16 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
     setError(null);
     
     try {
+      // 日付の処理
+      if (data.due_date && !(data.due_date instanceof Date)) {
+        try {
+          data.due_date = new Date(data.due_date);
+        } catch (e) {
+          console.error("日付変換エラー:", e);
+          data.due_date = null;
+        }
+      }
+      
       // サブタスク作成
       const result = await taskApi.createSubtask(parentTask.id, data);
       if (!result && taskApi.error) {
@@ -80,7 +93,8 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
         return;
       }
       
-      onClose(true); // 更新があったことを通知
+      // 更新があったことを通知し、タイトルも渡す
+      onClose(true, data.title);
     } catch (error: any) {
       console.error('Failed to save subtask:', error);
       setError(error.message || 'サブタスクの保存に失敗しました');
@@ -199,7 +213,19 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
                   <DatePicker
                     label="期限日"
                     value={field.value}
-                    onChange={field.onChange}
+                    onChange={(newValue) => {
+                      // nullまたはDateオブジェクトを確実に渡す
+                      if (newValue && !(newValue instanceof Date)) {
+                        try {
+                          field.onChange(new Date(newValue));
+                        } catch (e) {
+                          console.error("日付変換エラー:", e);
+                          field.onChange(null);
+                        }
+                      } else {
+                        field.onChange(newValue);
+                      }
+                    }}
                     slotProps={{
                       textField: {
                         fullWidth: true,

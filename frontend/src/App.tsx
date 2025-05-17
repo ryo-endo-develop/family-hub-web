@@ -8,7 +8,24 @@ import AppRoutes from './app/router';
 import { theme } from './styles/theme';
 import { useDispatch } from 'react-redux';
 import { checkAuth, logout } from './features/auth/authSlice';
-import { registerLogoutHandler } from './api/client';
+import { registerLogoutHandler, setGlobalNotificationHandler } from './api/client';
+import { NotificationProvider } from './contexts/NotificationContext';
+import NotificationContainer from './components/NotificationContainer';
+import { useNotification } from './contexts/NotificationContext';
+
+// グローバル通知ハンドラーを設定するためのコンポーネント
+const NotificationHandler = () => {
+  const { addNotification } = useNotification();
+  
+  useEffect(() => {
+    // グローバル通知ハンドラーを設定
+    setGlobalNotificationHandler((message, type, duration) => {
+      addNotification({ message, type, duration });
+    });
+  }, [addNotification]);
+  
+  return null;
+};
 
 function App() {
   const dispatch = useDispatch();
@@ -40,8 +57,12 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ja}>
-        <CssBaseline />
-        <AppRoutes />
+        <NotificationProvider>
+          <NotificationHandler />
+          <CssBaseline />
+          <AppRoutes />
+          <NotificationContainer />
+        </NotificationProvider>
       </LocalizationProvider>
     </ThemeProvider>
   );

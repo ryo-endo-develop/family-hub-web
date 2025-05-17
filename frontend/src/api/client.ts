@@ -1,4 +1,14 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
+import { NotificationType } from '../contexts/NotificationContext';
+
+// グローバル通知ハンドラー
+type NotificationHandler = (message: string, type: NotificationType, duration?: number) => void;
+let globalNotificationHandler: NotificationHandler | null = null;
+
+// 通知ハンドラーを設定
+export const setGlobalNotificationHandler = (handler: NotificationHandler) => {
+  globalNotificationHandler = handler;
+};
 
 // メモリ内でアクセストークンを管理
 let accessToken: string | null = null;
@@ -52,6 +62,36 @@ apiClient.interceptors.request.use(
   },
 );
 
+// エラーメッセージをユーザーフレンドリーに変換
+const getErrorMessage = (error: AxiosError): string => {
+  // APIからのエラーメッセージがある場合
+  const apiErrorMessage = error.response?.data?.message || error.response?.data?.detail;
+  if (apiErrorMessage) return apiErrorMessage;
+
+  // ステータスコードに基づいたメッセージ
+  switch (error.response?.status) {
+    case 400:
+      return 'リクエストが不正です';
+    case 401:
+      return '認証に失敗しました';
+    case 403:
+      return 'この操作を行う権限がありません';
+    case 404:
+      return '指定したリソースが見つかりません';
+    case 422:
+      return '入力データの検証に失敗しました';
+    case 429:
+      return 'リクエストが多すぎます。しばらく待ってから再試行してください';
+    case 500:
+    case 502:
+    case 503:
+    case 504:
+      return 'サーバーエラーが発生しました。しばらくしてから再試行してください';
+    default:
+      return 'エラーが発生しました';
+  }
+};
+
 // レスポンスインターセプター
 apiClient.interceptors.response.use(
   response => {
@@ -62,7 +102,24 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
 
     // エラーログ（デバッグ用）
-    console.error(`API エラー: ${error.response?.status} ${originalRequest.url}`);
+    console.error(`API エラー: ${error.response?.status} ${originalRequest.url}`, error);
+
+    // ユーザーへの通知（401エラーでリフレッシュトークン周りのリクエストは除外）
+    if (
+      error.response && 
+      !(error.response.status === 401 && 
+        (originalRequest.url?.includes('/auth/logout') || 
+         originalRequest.url?.includes('/auth/refresh') || 
+         originalRequest.url?.includes('/auth/session-check'))
+      )
+    ) {
+      const errorMessage = getErrorMessage(error);
+      if (globalNotificationHandler) {
+        // 認証エラーの場合は自動消去しない（ログアウト処理が必要なため）
+        const duration = error.response.status === 401 ? undefined : 5000;
+        globalNotificationHandler(errorMessage, 'error', duration);
+      }
+    }
 
     // 401エラーで、かつリトライフラグがfalseの場合（無限ループ防止）
     if (
