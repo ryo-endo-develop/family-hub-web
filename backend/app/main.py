@@ -59,5 +59,14 @@ async def root():
     return {"message": "Welcome to SyncFam API"}
 
 
+@app.get("/health")
+async def health_check():
+    """
+    ヘルスチェック用エンドポイント
+    デプロイ時にサービスの状態確認に使用されます
+    """
+    return {"status": "ok", "service": "SyncFam API", "version": "1.0.0"}
+
+
 if __name__ == "__main__":
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

@@ -33,9 +33,12 @@ let pendingRequests: Array<{
   config: any;
 }> = [];
 
+// APIベースURLを環境変数から取得
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+
 // APIクライアントのベースインスタンス
 const apiClient = axios.create({
-  baseURL: '/api/v1',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -144,7 +147,7 @@ apiClient.interceptors.response.use(
       try {
         // リフレッシュAPIを呼び出す
         const response = await axios.post(
-          '/api/v1/auth/refresh',
+          `${API_BASE_URL}/auth/refresh`,
           {},
           {
             withCredentials: true,
