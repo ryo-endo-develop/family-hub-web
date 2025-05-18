@@ -5,29 +5,9 @@ from fastapi import Depends, HTTPException, status, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.user import get_user_by_id
-from app.db.session import SessionLocal
+from app.db.session import get_db
 from app.models.user import User
 from app.services.auth import validate_access_token
-
-
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """
-    DB接続用の依存性関数
-    """
-    from app.db.session import init_engine, SessionLocal
-    
-    # エンジンの初期化を確認
-    if SessionLocal is None:
-        await init_engine()
-        if SessionLocal is None:
-            raise RuntimeError("データベースセッションの初期化に失敗しました")
-    
-    # セッションの作成
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        await db.close()
 
 
 async def get_current_user(
