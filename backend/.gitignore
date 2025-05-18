@@ -47,6 +47,4 @@ htmlcov/
 # アップロードされたファイル
 uploads/
 
-# Alembic関連
-alembic/versions/*
-!alembic/versions/.gitkeep
+
