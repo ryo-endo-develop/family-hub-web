@@ -36,9 +36,14 @@ import ja from 'date-fns/locale/ja';
 
 import { TaskFilter } from '../types';
 
+// タスクフィルタパネルの拡張
+interface ExtendedTaskFilter extends TaskFilter {
+  priority?: 'low' | 'medium' | 'high';
+}
+
 interface TaskFilterPanelProps {
-  filters: TaskFilter;
-  onFilterChange: (filters: Partial<TaskFilter>) => void;
+  filters: ExtendedTaskFilter;
+  onFilterChange: (filters: Partial<ExtendedTaskFilter>) => void;
   disabled?: boolean;
 }
 
@@ -70,7 +75,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
     if (disabled) return;
 
     // 明示的に変更が必要なフィルターのみを更新
-    const clearedFilters: Partial<TaskFilter> = {
+    const clearedFilters: Partial<ExtendedTaskFilter> = {
       status: undefined,
       priority: undefined,
       assignee_id: undefined,
@@ -237,7 +242,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
         {/* ステータス選択 */}
         <Grid item xs={12} sm={6}>
           <FormControl fullWidth size="small">
-            <InputLabel id="status-label" notched shrink>
+            <InputLabel id="status-label">
               ステータス
             </InputLabel>
             <Select
@@ -248,27 +253,18 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
               onChange={handleStatusChange}
               displayEmpty
               disabled={disabled}
-              renderValue={value => {
-                return value === ''
-                  ? 'すべて'
-                  : {
-                      pending: '未着手',
-                      in_progress: '進行中',
-                      completed: '完了',
-                    }[value];
-              }}
-              sx={{
-                '& .MuiInputLabel-shrink': {
-                  transform: 'translate(14px, -9px) scale(0.75)',
-                },
-                '& .MuiOutlinedInput-notchedOutline': {
-                  paddingLeft: 2,
-                },
-                '& .MuiSelect-select': {
-                  paddingTop: '8px',
-                  paddingBottom: '8px',
-                  paddingLeft: '14px',
-                },
+              renderValue={(selected: string) => {
+                if (selected === '') {
+                  return <Typography sx={{ opacity: 0.6 }}>すべて</Typography>;
+                }
+                
+                const statusLabels: Record<string, string> = {
+                  pending: '未着手',
+                  in_progress: '進行中',
+                  completed: '完了',
+                };
+                
+                return statusLabels[selected as 'pending' | 'in_progress' | 'completed'] || selected;
               }}
             >
               <MenuItem value="">すべて</MenuItem>
@@ -282,7 +278,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
         {/* 優先度選択 */}
         <Grid item xs={12} sm={6}>
           <FormControl fullWidth size="small">
-            <InputLabel id="priority-label" shrink>
+            <InputLabel id="priority-label">
               優先度
             </InputLabel>
             <Select
@@ -293,27 +289,18 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
               onChange={handlePriorityChange}
               displayEmpty
               disabled={disabled}
-              renderValue={value => {
-                return value === ''
-                  ? 'すべて'
-                  : {
-                      high: '高',
-                      medium: '中',
-                      low: '低',
-                    }[value];
-              }}
-              sx={{
-                '& .MuiInputLabel-shrink': {
-                  transform: 'translate(14px, -9px) scale(0.75)',
-                },
-                '& .MuiOutlinedInput-notchedOutline': {
-                  paddingLeft: 2,
-                },
-                '& .MuiSelect-select': {
-                  paddingTop: '8px',
-                  paddingBottom: '8px',
-                  paddingLeft: '14px',
-                },
+              renderValue={(selected: string) => {
+                if (selected === '') {
+                  return <Typography sx={{ opacity: 0.6 }}>すべて</Typography>;
+                }
+                
+                const priorityLabels: Record<string, string> = {
+                  high: '高',
+                  medium: '中',
+                  low: '低',
+                };
+                
+                return priorityLabels[selected as 'low' | 'medium' | 'high'] || selected;
               }}
             >
               <MenuItem value="">すべて</MenuItem>

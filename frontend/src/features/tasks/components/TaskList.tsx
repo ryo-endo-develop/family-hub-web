@@ -32,7 +32,7 @@ import { format } from 'date-fns';
 import { getTagChipStyles } from '../../../utils/tagUtils';
 import ja from 'date-fns/locale/ja';
 
-import { Task } from '../types';
+import { Task, Tag } from '../types';
 
 interface TaskListProps {
   tasks: Task[];
@@ -198,7 +198,7 @@ const TaskList = ({
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
                   <TagIcon fontSize="small" color="action" sx={{ mr: 1, mt: 0.5 }} />
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {task.tags.map(tag => (
+                    {task.tags.map((tag: Tag) => (
                       <Chip
                         key={tag.id}
                         label={tag.name}
@@ -289,7 +289,7 @@ const TaskList = ({
                 </TableCell>
                 <TableCell>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {task.tags.map(tag => (
+                    {task.tags.map((tag: Tag) => (
                       <Chip
                         key={tag.id}
                         label={tag.name}

@@ -29,7 +29,7 @@ import { format } from 'date-fns';
 import { getTagChipStyles } from '../../../../utils/tagUtils';
 import ja from 'date-fns/locale/ja';
 
-import { Task } from '../../types';
+import { Task, Tag } from '../../types';
 
 interface TaskListProps {
   tasks: Task[];
@@ -141,7 +141,7 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, level, onEdit, onDelete, onAddS
         </TableCell>
         <TableCell>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-            {task.tags.map(tag => (
+            {task.tags.map((tag: Tag) => (
               <Chip
                 key={tag.id}
                 label={tag.name}
@@ -182,7 +182,7 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, level, onEdit, onDelete, onAddS
               <Box sx={{ margin: 1 }}>
                 <Table size="small">
                   <TableBody>
-                    {task.subtasks.map(subtask => (
+                    {task.subtasks.map((subtask: Task) => (
                       <TaskRow
                         key={subtask.id}
                         task={subtask}

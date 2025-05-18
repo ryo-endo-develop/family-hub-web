@@ -37,13 +37,16 @@ const NotificationContext = createContext<{
 function notificationReducer(state: NotificationState, action: NotificationAction): NotificationState {
   switch (action.type) {
     case 'ADD_NOTIFICATION':
+      const id = Date.now(); // 一意のIDとして現在のタイムスタンプを使用
       return {
         ...state,
         notifications: [
           ...state.notifications,
           {
-            id: Date.now(), // 一意のIDとして現在のタイムスタンプを使用
-            ...action.payload,
+            id,
+            message: action.payload.message,
+            type: action.payload.type,
+            duration: action.payload.duration,
           },
         ],
       };
@@ -68,7 +71,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     const id = Date.now();
     dispatch({ 
       type: 'ADD_NOTIFICATION', 
-      payload: { ...notification, id } 
+      payload: notification
     });
 
     // 自動的に消える設定の場合

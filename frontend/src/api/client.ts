@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, AxiosRequestHeaders, AxiosHeaderValue } from 'axios';
 
 import { NotificationType } from '../contexts/NotificationContext';
 
@@ -52,6 +52,11 @@ const apiClient = axios.create({
   withCredentials: true, // リクエストにCookieを含める（リフレッシュトークン用）
 });
 
+interface ApiResponseError {
+  message?: string;
+  detail?: string;
+}
+
 // リクエストインターセプター
 apiClient.interceptors.request.use(
   config => {
@@ -59,12 +64,14 @@ apiClient.interceptors.request.use(
 
     // リクエスト前にアクセストークンをヘッダーに設定
     if (accessToken) {
+      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
 
     // CSRF対策：フォームデータを送信する場合は状態を確認
     if (
       (config.method === 'post' || config.method === 'put' || config.method === 'delete') &&
+      config.headers && 
       config.headers['Content-Type'] === 'application/x-www-form-urlencoded'
     ) {
       // CSRF対策としてヘッダーにリファラー情報を追加
@@ -76,10 +83,14 @@ apiClient.interceptors.request.use(
     if (import.meta.env.DEV) {
       const debugConfig = { ...config };
       // セキュリティのため、機密ヘッダーをログに表示しない
-      if (debugConfig.headers && debugConfig.headers.Authorization) {
-        debugConfig.headers = { ...debugConfig.headers, Authorization: '******' };
+      if (debugConfig.headers && 'Authorization' in debugConfig.headers) {
+        // Safely clone headers without modifying the original
+        const sanitizedHeaders = { ...debugConfig.headers };
+        if (sanitizedHeaders.Authorization) {
+          sanitizedHeaders.Authorization = '******';
+        }
+        console.log(`API リクエスト: ${config.method?.toUpperCase()} ${config.url}`);
       }
-      console.log(`API リクエスト: ${config.method?.toUpperCase()} ${config.url}`);
     }
 
     return config;
@@ -90,7 +101,7 @@ apiClient.interceptors.request.use(
 );
 
 // エラーメッセージをユーザーフレンドリーに変換
-const getErrorMessage = (error: AxiosError): string => {
+const getErrorMessage = (error: AxiosError<ApiResponseError>): string => {
   // APIからのエラーメッセージがある場合
   const apiErrorMessage = error.response?.data?.message || error.response?.data?.detail;
   if (apiErrorMessage) return apiErrorMessage;
@@ -127,6 +138,9 @@ apiClient.interceptors.response.use(
   async error => {
     // 元のリクエストを保存
     const originalRequest = error.config;
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
 
     // エラーログ（デバッグ用）
     console.error(`API エラー: ${error.response?.status} ${originalRequest.url}`, error);
@@ -189,10 +203,16 @@ apiClient.interceptors.response.use(
         setAccessToken(newAccessToken);
 
         // 元のリクエストのヘッダーを更新
+        if (!originalRequest.headers) {
+          originalRequest.headers = {};
+        }
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
         // 保留中のリクエストも新しいトークンで実行
         pendingRequests.forEach(request => {
+          if (!request.config.headers) {
+            request.config.headers = {};
+          }
           request.config.headers.Authorization = `Bearer ${newAccessToken}`;
           apiClient(request.config)
             .then(res => request.resolve(res))

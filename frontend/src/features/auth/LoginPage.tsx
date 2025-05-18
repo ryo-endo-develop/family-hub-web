@@ -14,12 +14,11 @@ import {
   Typography,
 } from '@mui/material';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { useDispatch } from 'react-redux';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 
 import { useAuth } from '../../hooks/useAuth';
-
+import { useAppDispatch } from '../../hooks/reduxHooks';
 import { LoginCredentials, clearError, login } from './authSlice';
 
 // バリデーションスキーマ
@@ -31,7 +30,7 @@ const loginSchema = z.object({
 type LoginFormInputs = z.infer<typeof loginSchema>;
 
 const LoginPage = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const location = useLocation();
   const { isAuthenticated, loading, error } = useAuth();
 
@@ -72,7 +71,8 @@ const LoginPage = () => {
     };
 
     try {
-      await dispatch(login(credentials));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await dispatch(login(credentials) as any);
     } catch (error) {
       console.error('ログイン処理中にエラー:', error);
     }

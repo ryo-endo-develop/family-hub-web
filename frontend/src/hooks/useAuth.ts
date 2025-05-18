@@ -1,16 +1,17 @@
 import { useEffect, useRef } from 'react';
 
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 
 import { RootState } from '../app/store';
 import { checkAuth } from '../features/auth/authSlice';
+import { useAppDispatch } from './reduxHooks';
 
 /**
  * 認証状態を管理するフック
  * アプリ起動時に自動的に認証状態をチェック
  */
 export const useAuth = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const { isAuthenticated, user, loading, error, currentFamily } = useSelector(
     (state: RootState) => state.auth,
   );
@@ -30,7 +31,8 @@ export const useAuth = () => {
       initialized.current = true;
       try {
         // 認証状態を確認
-        await dispatch(checkAuth());
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await dispatch(checkAuth() as any);
       } catch (error) {
         console.error('認証状態の確認に失敗しました:', error);
       }
