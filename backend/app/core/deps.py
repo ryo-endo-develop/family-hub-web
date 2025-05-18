@@ -14,6 +14,15 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     DB接続用の依存性関数
     """
+    from app.db.session import init_engine, SessionLocal
+    
+    # エンジンの初期化を確認
+    if SessionLocal is None:
+        await init_engine()
+        if SessionLocal is None:
+            raise RuntimeError("データベースセッションの初期化に失敗しました")
+    
+    # セッションの作成
     db = SessionLocal()
     try:
         yield db

@@ -85,16 +85,62 @@ async def startup_event():
     """
     アプリケーション起動時の処理
     """
+    print("アプリケーション起動処理を開始します...")
+    
     # データベース接続を初期化
     try:
-        from app.db.session import init_engine
+        from app.db.session import init_engine, SessionLocal
         
         print("データベース接続を初期化しています...")
-        await init_engine()
-        print("データベース接続の初期化が完了しました")
+        # 有効期限つきの試行
+        retry_count = 0
+        max_retries = 5
+        success = False
+        last_error = None
+        
+        while retry_count < max_retries and not success:
+            try:
+                await init_engine()
+                # 接続テスト
+                if SessionLocal is not None:
+                    test_db = SessionLocal()
+                    try:
+                        await test_db.execute("SELECT 1")
+                        success = True
+                        print(f"データベース接続テスト成功 ({retry_count+1}回目の試行)")
+                    except Exception as conn_err:
+                        last_error = conn_err
+                        print(f"データベース接続テスト失敗: {conn_err}")
+                    finally:
+                        await test_db.close()
+                else:
+                    last_error = RuntimeError("SessionLocalが初期化されていません")
+            except Exception as init_err:
+                last_error = init_err
+                print(f"初期化エラー (試行 {retry_count+1}/{max_retries}): {init_err}")
+                
+            if not success:
+                retry_count += 1
+                if retry_count < max_retries:
+                    wait_time = 2 ** retry_count  # 指数バックオフ (2, 4, 8, 16秒...)
+                    print(f"{wait_time}秒待機して再試行します...")
+                    import asyncio
+                    await asyncio.sleep(wait_time)
+        
+        if not success:
+            print(f"データベース接続の初期化に失敗しました (試行回数: {max_retries}): {last_error}")
+            # 警告だけ表示し、アプリケーションは起動させる
+            # 最初のリクエスト時にもう一度初期化を試みる
+            print("警告: データベースに接続できませんが、アプリケーションは起動を続行します")
+        else:
+            print("データベース接続の初期化が完了しました")
+                
     except Exception as e:
-        print(f"データベース接続の初期化中にエラーが発生しました: {e}")
-        raise  # データベースが使用できない場合はアプリを起動しない
+        import traceback
+        print(f"データベース接続の初期化中に予期せぬエラーが発生しました: {e}")
+        traceback.print_exc()
+        # エラーを報告するが、アプリケーションは起動させる
+        print("警告: データベースエラーが発生しましたが、アプリケーションは起動を続行します")
         
     # ログ設定を初期化
     try:
@@ -105,16 +151,41 @@ async def startup_event():
     except Exception as e:
         print(f"\u30edグ設定の初期化エラー: {e}")
     
-    # ルーティンタスクのリセット処理を実行
-    try:
-        from app.services.routine_task import reset_completed_routine_tasks
+    # ルーティンタスクのリセット処理はバックグラウンドタスクとして起動後に実行する
+    @app.on_event("startup")
+    async def reset_routine_tasks_on_startup():
+        """
+        アプリケーション起動後にルーティンタスクをリセットする
+        最初のエンドポイントリクエスト後に実行されるため、データベースの準備が整っている可能性が高い
+        """
+        # 10秒待機してから実行してみる
+        import asyncio
+        await asyncio.sleep(10)
         
-        # DB接続を開始
-        async with SessionLocal() as db:
-            reset_count = await reset_completed_routine_tasks(db)
-            print(f"起動時に {reset_count} 件のルーティンタスクをリセットしました")
-    except Exception as e:
-        print(f"ルーティンタスクのリセット中にエラーが発生しました: {e}")
+        try:
+            from app.db.session import SessionLocal, init_engine
+            from app.services.routine_task import reset_completed_routine_tasks
+            
+            # データベースの初期化を確認
+            if SessionLocal is None:
+                print("データベース接続の初期化を実行します")
+                await init_engine()
+            
+            # 再度チェック
+            if SessionLocal is not None:
+                # DB接続を開始
+                db = SessionLocal()
+                try:
+                    reset_count = await reset_completed_routine_tasks(db)
+                    print(f"起動時に {reset_count} 件のルーティンタスクをリセットしました")
+                finally:
+                    await db.close()
+            else:
+                print("警告: SessionLocalが初期化されていないため、ルーティンタスクのリセットをスキップします")
+        except Exception as e:
+            import traceback
+            print(f"ルーティンタスクのリセット中にエラーが発生しました: {e}")
+            traceback.print_exc()
 
 
 @app.get("/")
