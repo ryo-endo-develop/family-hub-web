@@ -1,34 +1,43 @@
 services:
-  # バックエンドAPI
+  # バックエンドAPI (FastAPIアプリケーション)
   - type: web
-    name: syncfam-api
+    name: syncfam-api # サービス名を任意に設定
     env: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
-    region: singapore  # 必要に応じて変更
-    plan: starter    # 必要に応じて変更 (free, starter, standard等)
-    branch: main    # デプロイするブランチ
+    dockerfilePath: Dockerfile # プロジェクトルートのDockerfileを指定
+    dockerContext: .           # Dockerビルドコンテキストをプロジェクトルートに設定
+    region: singapore  # 例: 東京リージョン (asia-northeast1) または singapore など
+                              # データベースと同じリージョンを推奨
+    plan: starter            # 必要に応じて変更 (例: free, standard)
+    branch: main             # デプロイするブランチ
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: syncfam-db
-          property: connectionString
+          name: syncfam-db   # 下で定義するデータベース名
+          property: connectionString # Renderが接続文字列を提供
       - key: SECRET_KEY
-        generateValue: true
-      - key: DEBUG
-        value: false
-      - key: BACKEND_CORS_ORIGINS
-        value: '["https://syncfam.vercel.app"]'  # Vercelのドメインを設定
-      - key: ACCESS_TOKEN_EXPIRE_MINUTES
-        value: 1440  # 24時間
+        generateValue: true  # Renderが安全なキーを自動生成
       - key: ALGORITHM
         value: HS256
-    healthCheckPath: /
-    autoDeploy: true
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "30"          # docker-compose.yml の設定値を採用 (文字列で指定)
+                              # 必要であれば "1440" (24時間) などに変更
+      - key: DEBUG # アプリケーションがこの変数を参照する場合
+        value: "false"       # 本番環境ではfalse
+      - key: BACKEND_CORS_ORIGINS # フロントエンドのURLに合わせて設定
+        value: '["https://syncfam.vercel.app"]' # 例: 以前指定されたVercelのドメイン
+                                                # 複数ある場合はカンマ区切りで配列形式で指定
+      # PORT環境変数はRenderが自動的に設定し、DockerfileのCMDで参照されるため、
+      # ここで明示的に設定する必要はありません。
+    healthCheckPath: /docs # FastAPIのSwagger UIパスなどをヘルスチェックパスに指定 (または / など)
+    autoDeploy: true       # ブランチへのプッシュ時に自動デプロイ
 
-  # データベース
-  - type: postgres
-    name: syncfam-db
-    region: oregon
-    plan: free  # 必要に応じて変更
-    ipAllowList: []  # 必要に応じて制限を追加
+databases:
+  # PostgreSQL データベース
+  - name: syncfam-db
+    region: singapore  # APIサービスと同じリージョンを推奨
+    plan: free               # 必要に応じて変更 (例: starter, standard)
+                              # 無料プランには制限があるため、本番用途では有料プランを検討
+    postgresqlVersion: "15"  # docker-compose.yml のバージョンに合わせる
+    # ipAllowList: []        # デフォルトではRenderネットワーク内からのみアクセス可能
+                              # 外部から直接DBにアクセスする場合は、ここにIPアドレス/CIDRを指定
+                              # 例: [{ "source": "YOUR_IP_ADDRESS/32", "description": "My Home IP" }]
