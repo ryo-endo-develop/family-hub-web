@@ -40,6 +40,9 @@ let pendingRequests: Array<{
 // APIベースURLを環境変数から取得
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
+// 開発時のAPI URLログ出力
+console.log(`Using API base URL: ${API_BASE_URL}`);
+
 // APIクライアントのベースインスタンス
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -70,7 +73,7 @@ apiClient.interceptors.request.use(
     }
 
     // デバッグ用のログ出力（センシティブな情報は隠蔽）
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       const debugConfig = { ...config };
       // セキュリティのため、機密ヘッダーをログに表示しない
       if (debugConfig.headers && debugConfig.headers.Authorization) {

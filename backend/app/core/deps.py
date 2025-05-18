@@ -1,5 +1,5 @@
 import uuid
-from typing import Annotated, Generator
+from typing import Annotated, AsyncGenerator
 
 from fastapi import Depends, HTTPException, status, Header
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,12 +10,12 @@ from app.models.user import User
 from app.services.auth import validate_access_token
 
 
-async def get_db() -> Generator:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     DB接続用の依存性関数
     """
+    db = SessionLocal()
     try:
-        db = SessionLocal()
         yield db
     finally:
         await db.close()

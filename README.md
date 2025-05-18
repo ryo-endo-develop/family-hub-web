@@ -109,6 +109,26 @@ http://localhost:3000
 - Swagger UI: http://localhost:8000/api/v1/docs
 - ReDoc: http://localhost:8000/api/v1/redoc
 
+## デプロイ情報
+
+### バックエンドデプロイ (Render)
+
+1. Renderダッシュボードから「New Web Service」を選択
+2. リポジトリを選択し、「Root Directory」に「backend」を指定
+3. 「Build Command」として「$ pip install -r requirements.txt」を設定
+4. 「Start Command」として「$ uvicorn app.main:app --host 0.0.0.0 --port $PORT」を設定
+5. 環境変数を設定（DATABASE_URL、SECRET_KEYなど）
+6. 「Create Web Service」をクリック
+
+### フロントエンドデプロイ (Vercel)
+
+1. Vercelダッシュボードから「New Project」をクリック
+2. リポジトリを選択
+3. 「Root Directory」に「frontend」を指定
+4. 「Framework Preset」に「Vite」を選択
+5. 必要に応じて環境変数を設定
+6. 「Deploy」をクリック
+
 ## ライセンス
 
 このプロジェクトは [MITライセンス](LICENSE) の下で公開されています。
