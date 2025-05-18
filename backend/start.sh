@@ -31,8 +31,11 @@ async def test_async_connection():
         engine = create_async_engine(db_url)
         async with engine.connect() as conn:
             result = await conn.execute(text("SELECT 1"))
-            row = await result.fetchone()
-            print(f"接続テスト結果: {row[0]}")
+            row = result.fetchone()  # fetchone()はもはや非同期関数ではないので、awaitを削除
+            if row:
+                print(f"接続テスト結果: {row[0]}")
+            else:
+                print("結果がありません")
         await engine.dispose()
         print("asyncpgを使用した接続成功")
         return True
@@ -56,9 +59,10 @@ if [ $connection_result -ne 0 ]; then
     echo "警告: データベース接続テストに失敗しましたが、アプリケーションは続行します"
 fi
 
-# マイグレーションの実行
+# マイグレーション実行情報を表示
 echo "データベースマイグレーションを実行します..."
-cd /app && python -m alembic upgrade head
+echo "注意: マイグレーションはアプリケーション起動時に自動的に実行されます"
+echo "      問題が発生した場合はログを確認してください"
 
 # アプリケーションの起動
 echo "アプリケーションを起動します..."

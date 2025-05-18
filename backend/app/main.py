@@ -1,10 +1,22 @@
 import logging
-import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import os
+import subprocess
+import logging
+import asyncio
 
 from app.core.config import settings
 from app.routers.api import api_router
+from app.db.session import init_db
+
+# ログ設定
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 # FastAPIアプリケーションの作成
 app = FastAPI(
@@ -29,16 +41,43 @@ if settings.BACKEND_CORS_ORIGINS:
 # APIルーターをアプリケーションに登録
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
-
+# アプリケーション起動時に実行する処理
 @app.on_event("startup")
 async def startup_event():
     """
     アプリケーション起動時の処理
     """
-    print(
-        "アプリケーションが起動しました。データベーススキーマはAlembicで管理されます。"
-    )  # 必要であればログメッセージをここに追加
-    pass  # 他に起動時処理がなければ pass
+    logger.info("アプリケーションが起動しました。データベースマイグレーションを確認します。")
+    
+# マイグレーションを実行
+    try:
+        logger.info("Alembicマイグレーションを実行中...")
+        try:
+            # サブプロセスでマイグレーションを実行
+            import subprocess
+            result = subprocess.run(
+                ["alembic", "upgrade", "head"],
+                check=True,
+                capture_output=True,
+                text=True,
+                cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            )
+            logger.info("Alembicマイグレーションが正常に完了しました")
+            if result.stdout:
+                logger.info(f"マイグレーション実行結果: {result.stdout}")
+            if result.stderr:
+                logger.warning(f"マイグレーション警告/エラー: {result.stderr}")
+        except subprocess.SubprocessError as e:
+            logger.error(f"マイグレーション実行中にエラーが発生しました: {e}")
+            if hasattr(e, 'stdout') and e.stdout:
+                logger.error(f"標準出力: {e.stdout}")
+            if hasattr(e, 'stderr') and e.stderr:
+                logger.error(f"エラー出力: {e.stderr}")
+    except Exception as e:
+        logger.error(f"マイグレーション処理中にエラーが発生しました: {e}")
+        # エラーが発生してもアプリケーションは続行
+
+    await init_db()
 
 
 @app.get("/")
