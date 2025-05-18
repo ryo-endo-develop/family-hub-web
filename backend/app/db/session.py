@@ -7,6 +7,12 @@ from sqlalchemy.orm import declarative_base
 # SQLAlchemyのベースクラス
 Base = declarative_base()
 
+# テスト中かどうかを確認
+TESTING = os.getenv("TESTING", "False").lower() in ("true", "1", "t")
+
+# 開発環境かどうか確認
+DEVELOPMENT = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
+
 # 生のURLを取得
 # DATABASE_URLに加えて、Renderで使われるPOSTGRES_URLやRENDER_DATABASE_URLもチェック
 raw_database_url = (
@@ -333,13 +339,6 @@ async def init_engine_with_fallback():
         traceback.print_exc()
 
     raise RuntimeError("Could not set up any database connection")
-
-
-# テスト中かどうかを確認
-TESTING = os.getenv("TESTING", "False").lower() in ("true", "1", "t")
-
-# 開発環境かどうか確認
-DEVELOPMENT = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 
 # データベースURLが設定されていない場合
 if not raw_database_url:

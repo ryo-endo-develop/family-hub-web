@@ -541,7 +541,7 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
                     利用可能なタグがありません
                   </Typography>
                 ) : (
-                  tags.map(tag => {
+                  tags.map((tag: Tag) => {
                     const isSelected = selectedTagIds.includes(tag.id);
 
                     return (

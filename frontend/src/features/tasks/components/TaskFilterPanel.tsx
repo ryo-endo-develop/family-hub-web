@@ -242,9 +242,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
         {/* ステータス選択 */}
         <Grid item xs={12} sm={6}>
           <FormControl fullWidth size="small">
-            <InputLabel id="status-label">
-              ステータス
-            </InputLabel>
+            <InputLabel id="status-label">ステータス</InputLabel>
             <Select
               labelId="status-label"
               id="status-select"
@@ -253,7 +251,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
               onChange={handleStatusChange}
               displayEmpty
               disabled={disabled}
-              renderValue={(selected: string) => {
+              renderValue={(selected: any) => {
                 if (selected === '') {
                   return <Typography sx={{ opacity: 0.6 }}>すべて</Typography>;
                 }
@@ -278,9 +276,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
         {/* 優先度選択 */}
         <Grid item xs={12} sm={6}>
           <FormControl fullWidth size="small">
-            <InputLabel id="priority-label">
-              優先度
-            </InputLabel>
+            <InputLabel id="priority-label">優先度</InputLabel>
             <Select
               labelId="priority-label"
               id="priority-select"
@@ -289,7 +285,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
               onChange={handlePriorityChange}
               displayEmpty
               disabled={disabled}
-              renderValue={(selected: string) => {
+              renderValue={(selected: any) => {
                 if (selected === '') {
                   return <Typography sx={{ opacity: 0.6 }}>すべて</Typography>;
                 }

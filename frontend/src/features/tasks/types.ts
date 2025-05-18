@@ -11,7 +11,7 @@ export const tagSchema = z.object({
 export type Tag = z.infer<typeof tagSchema>;
 
 // タスクスキーマ（再帰的な定義）
-export const taskSchema = z.lazy((): z.ZodType<any> => z.object({
+export const taskSchema = z.lazy(() => z.object<any>({
   id: z.string().uuid(),
   title: z.string().min(1, 'タイトルは必須です'),
   description: z.string().optional().nullable(),
@@ -38,7 +38,7 @@ export const taskSchema = z.lazy((): z.ZodType<any> => z.object({
   created_at: z.string().transform(val => new Date(val)),
   updated_at: z.string().transform(val => new Date(val)),
   tags: z.array(tagSchema).default([]),
-  subtasks: z.array(z.lazy((): z.ZodType<any> => taskSchema)).default([]), // サブタスク
+  subtasks: z.array(z.lazy(() => taskSchema)).default([]), // サブタスク
 }));
 
 export type Task = z.infer<typeof taskSchema>;
@@ -91,6 +91,7 @@ export type TaskListResponse = z.infer<typeof taskListResponseSchema>;
 
 // タスクフィルタースキーマ
 export const taskFilterSchema = z.object({
+  priority: z.enum(['low', 'medium', 'high']).optional(),
   assignee_id: z.string().uuid().optional(),
   status: z.enum(['pending', 'in_progress', 'completed']).optional(),
   is_routine: z.boolean().optional(),
