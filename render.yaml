@@ -1,0 +1,53 @@
+services:
+  # バックエンドAPI
+  - type: web
+    name: syncfam-api
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    region: oregon  # 必要に応じて変更
+    plan: starter    # 必要に応じて変更 (free, starter, standard等)
+    branch: main    # デプロイするブランチ
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: syncfam-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: false
+      - key: BACKEND_CORS_ORIGINS
+        value: '["https://syncfam-web.onrender.com"]'  # フロントエンドのURL
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 1440  # 24時間
+      - key: ALGORITHM
+        value: HS256
+    healthCheckPath: /
+    autoDeploy: true
+
+  # フロントエンド
+  - type: web
+    name: syncfam-web
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    branch: main
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://syncfam-api.onrender.com/api/v1  # バックエンドAPIのURL
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  # データベース
+  - type: pgsql
+    name: syncfam-db
+    region: oregon
+    plan: free  # 必要に応じて変更
+    ipAllowList: []  # 必要に応じて制限を追加
