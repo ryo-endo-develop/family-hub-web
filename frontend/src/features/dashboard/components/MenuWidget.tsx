@@ -5,9 +5,7 @@ import { format } from 'date-fns';
 // prettier-ignore
 import ja from 'date-fns/locale/ja';
 
-interface MenuWidgetProps {
-  familyId: string;
-}
+// Props aren't used yet, so removed the interface
 
 // ダミーデータ
 const dummyMenus = {
@@ -16,7 +14,7 @@ const dummyMenus = {
   dinner: '鮭のホイル焼き・サラダ',
 };
 
-const MenuWidget = ({ _familyId }: MenuWidgetProps) => {
+const MenuWidget = () => {
   const today = new Date();
   const formattedDate = format(today, 'M月d日（E）', { locale: ja });
 

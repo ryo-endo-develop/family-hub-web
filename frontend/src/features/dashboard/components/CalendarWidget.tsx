@@ -12,11 +12,9 @@ const dummyEvents = [
   { id: 3, title: '予防接種', date: new Date(2025, 4, 15) },
 ];
 
-interface CalendarWidgetProps {
-  familyId: string;
-}
+// Props aren't used yet, so removed the interface
 
-const CalendarWidget = ({ _familyId }: CalendarWidgetProps) => {
+const CalendarWidget = () => {
   const today = new Date();
 
   // 今日のイベントをフィルタリング

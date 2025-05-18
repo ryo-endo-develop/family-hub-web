@@ -265,7 +265,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
                 };
 
                 return (
-                  statusLabels[selected as 'pending' | 'in_progress' | 'completed'] || selected
+                  statusLabels[selected as string] || selected
                 );
               }}
             >
@@ -300,7 +300,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
                   low: '低',
                 };
 
-                return priorityLabels[selected as 'low' | 'medium' | 'high'] || selected;
+                return priorityLabels[selected as string] || selected;
               }}
             >
               <MenuItem value="">すべて</MenuItem>

@@ -53,17 +53,17 @@ const DashboardPage = () => {
 
         {/* カレンダーウィジェット */}
         <Grid item xs={12} md={6}>
-          <CalendarWidget familyId={currentFamily.id} />
+          <CalendarWidget />
         </Grid>
 
         {/* 献立ウィジェット */}
         <Grid item xs={12} md={6}>
-          <MenuWidget familyId={currentFamily.id} />
+          <MenuWidget />
         </Grid>
 
         {/* お出かけスポットウィジェット */}
         <Grid item xs={12} md={6}>
-          <PlacesWidget familyId={currentFamily.id} />
+          <PlacesWidget />
         </Grid>
       </Grid>
     </div>

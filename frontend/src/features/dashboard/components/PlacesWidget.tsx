@@ -23,11 +23,9 @@ const dummyPlaces = [
   },
 ];
 
-interface PlacesWidgetProps {
-  familyId: string;
-}
+// Props aren't used yet, so removed the interface
 
-const PlacesWidget = ({ _familyId }: PlacesWidgetProps) => {
+const PlacesWidget = () => {
   return (
     <Card>
       <CardHeader title="お出かけスポット" action={<PlaceIcon />} />

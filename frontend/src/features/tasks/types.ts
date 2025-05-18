@@ -11,6 +11,7 @@ export const tagSchema = z.object({
 export type Tag = z.infer<typeof tagSchema>;
 
 // タスクスキーマ（再帰的な定義）
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const taskSchema = z.lazy(() => z.object({
   id: z.string().uuid(),
   title: z.string().min(1, 'タイトルは必須です'),
@@ -38,6 +39,7 @@ export const taskSchema = z.lazy(() => z.object({
   created_at: z.string().transform(val => new Date(val)),
   updated_at: z.string().transform(val => new Date(val)),
   tags: z.array(tagSchema).default([]),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   subtasks: z.array(z.lazy(() => taskSchema)).default([]), // サブタスク
 }));
 

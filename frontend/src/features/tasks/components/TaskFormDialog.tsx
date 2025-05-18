@@ -147,7 +147,7 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
         due_date: dueDate,
         family_id: task.family_id,
         assignee_id: task.assignee_id || null,
-        tag_ids: task.tags.map((tag) => tag.id),
+        tag_ids: task.tags.map((tag: { id: string }) => tag.id),
       });
     } else {
       reset({
