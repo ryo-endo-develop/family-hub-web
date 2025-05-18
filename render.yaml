@@ -7,7 +7,7 @@ services:
     dockerContext: .           # Dockerビルドコンテキストをプロジェクトルートに設定
     region: singapore  # 例: 東京リージョン (asia-northeast1) または singapore など
                               # データベースと同じリージョンを推奨
-    plan: starter            # 必要に応じて変更 (例: free, standard)
+    plan: free            # 必要に応じて変更 (例: free, standard)
     branch: main             # デプロイするブランチ
     envVars:
       - key: DATABASE_URL
