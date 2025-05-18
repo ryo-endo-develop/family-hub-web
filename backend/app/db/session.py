@@ -8,7 +8,14 @@ from sqlalchemy.orm import declarative_base
 Base = declarative_base()
 
 # 生のURLを取得
-raw_database_url = os.environ.get("DATABASE_URL")
+# DATABASE_URLに加えて、Renderで使われるPOSTGRES_URLやRENDER_DATABASE_URLもチェック
+raw_database_url = (
+    os.environ.get("DATABASE_URL") or 
+    os.environ.get("POSTGRES_URL") or 
+    os.environ.get("RENDER_DATABASE_URL")
+)
+
+print(f"環境変数から取得したデータベースURL: {raw_database_url}")
 
 
 # フォールバックメカニズム
@@ -18,6 +25,9 @@ async def init_engine_with_fallback():
     """
     global engine, SessionLocal
 
+    # 環境変数データベースURLを表示
+    print(f"DATABASE_URL: {raw_database_url}")
+
     # 最初に非同期ドライバーを試す
     try:
         if raw_database_url and raw_database_url.startswith("postgresql://"):
@@ -25,6 +35,8 @@ async def init_engine_with_fallback():
             asyncpg_url = raw_database_url.replace(
                 "postgresql://", "postgresql+asyncpg://"
             )
+
+            print(f"接続を試みます: {asyncpg_url}")
 
             # 接続テスト用の一時エンジン
             test_engine = create_async_engine(asyncpg_url)
@@ -44,6 +56,13 @@ async def init_engine_with_fallback():
             return
     except (exc.DBAPIError, ImportError, ModuleNotFoundError) as e:
         print(f"Failed to connect using asyncpg: {e}")
+        print(f"Error type: {type(e).__name__}")
+        if isinstance(e, exc.DBAPIError):
+            print(f"SQLAlchemy error code: {e.code}")
+        
+        # トレースバックを出力
+        import traceback
+        traceback.print_exc()
 
     # 非同期ドライバーに失敗した場合、同期ドライバーを試す
     try:
@@ -204,9 +223,15 @@ async def init_engine():
 
     # フォールバック機能を使ってエンジンを初期化
     await init_engine_with_fallback()
+    
+    # 結果を程んだ後でも初期化に失敗している可能性をチェック
+    if engine is None or SessionLocal is None:
+        print("エンジンまたはセッションが初期化されていません")
+        print(f"Engine: {engine}, SessionLocal: {SessionLocal}")
+        raise RuntimeError("データベースエンジンの初期化に失敗しました")
 
 
-# 非同期セッションを取得するための依存性
+# 引き続き、非同期セッションを取得するための依存性
 async def get_db():
     """
     DB接続用の依存性関数
@@ -215,11 +240,15 @@ async def get_db():
     if engine is None or SessionLocal is None:
         await init_engine()
 
-    session = SessionLocal()
+    if SessionLocal is None:
+        raise RuntimeError("データベースセッションが正しく初期化されていません")
+        
+    db = SessionLocal()
     try:
-        yield session
+        yield db
     finally:
-        await session.close()
+        if db is not None:
+            await db.close()
 
 
 async def init_db() -> None:

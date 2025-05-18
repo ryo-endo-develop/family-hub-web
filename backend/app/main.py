@@ -85,6 +85,17 @@ async def startup_event():
     """
     アプリケーション起動時の処理
     """
+    # データベース接続を初期化
+    try:
+        from app.db.session import init_engine
+        
+        print("データベース接続を初期化しています...")
+        await init_engine()
+        print("データベース接続の初期化が完了しました")
+    except Exception as e:
+        print(f"データベース接続の初期化中にエラーが発生しました: {e}")
+        raise  # データベースが使用できない場合はアプリを起動しない
+        
     # ログ設定を初期化
     try:
         from app.utils.logging_utils import setup_logging
