@@ -9,7 +9,6 @@ Base = declarative_base()
 
 # 生のURLを取得
 raw_database_url = os.environ.get("DATABASE_URL")
-print(f"Raw DATABASE_URL: {raw_database_url}")
 
 
 # フォールバックメカニズム
