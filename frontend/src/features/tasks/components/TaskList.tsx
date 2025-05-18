@@ -30,10 +30,10 @@ import {
 } from '@mui/material';
 // prettier-ignore
 import { format } from 'date-fns';
-import { getTagChipStyles } from '../../../utils/tagUtils';
 // prettier-ignore
 import ja from 'date-fns/locale/ja';
 
+import { getTagChipStyles } from '../../../utils/tagUtils';
 import { Task, Tag } from '../types';
 
 interface TaskListProps {
