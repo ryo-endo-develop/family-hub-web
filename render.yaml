@@ -18,7 +18,7 @@ services:
       - key: DEBUG
         value: false
       - key: BACKEND_CORS_ORIGINS
-        value: '["https://syncfam-web.onrender.com"]'  # フロントエンドのURL
+        value: '["https://syncfam.vercel.app"]'  # Vercelのドメインを設定
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: 1440  # 24時間
       - key: ALGORITHM
@@ -26,27 +26,8 @@ services:
     healthCheckPath: /
     autoDeploy: true
 
-  # フロントエンド
-  - type: web
-    name: syncfam-web
-    env: static
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: ./frontend/dist
-    branch: main
-    envVars:
-      - key: VITE_API_BASE_URL
-        value: https://syncfam-api.onrender.com/api/v1  # バックエンドAPIのURL
-    headers:
-      - path: /*
-        name: Cache-Control
-        value: no-cache
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-
   # データベース
-  - type: pgsql
+  - type: postgresql
     name: syncfam-db
     region: oregon
     plan: free  # 必要に応じて変更
