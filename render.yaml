@@ -5,7 +5,7 @@ services:
     env: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    region: oregon  # 必要に応じて変更
+    region: singapore  # 必要に応じて変更
     plan: starter    # 必要に応じて変更 (free, starter, standard等)
     branch: main    # デプロイするブランチ
     envVars:
@@ -27,7 +27,7 @@ services:
     autoDeploy: true
 
   # データベース
-  - type: postgresql
+  - type: postgres
     name: syncfam-db
     region: oregon
     plan: free  # 必要に応じて変更
