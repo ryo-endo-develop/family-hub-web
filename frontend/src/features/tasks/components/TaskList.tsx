@@ -28,8 +28,10 @@ import {
   useTheme,
   Stack,
 } from '@mui/material';
+// prettier-ignore
 import { format } from 'date-fns';
 import { getTagChipStyles } from '../../../utils/tagUtils';
+// prettier-ignore
 import ja from 'date-fns/locale/ja';
 
 import { Task, Tag } from '../types';

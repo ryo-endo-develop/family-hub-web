@@ -1,6 +1,8 @@
 import { CalendarMonth as CalendarIcon } from '@mui/icons-material';
 import { Card, CardContent, CardHeader, Grid, Typography } from '@mui/material';
+// prettier-ignore
 import { format, isSameDay } from 'date-fns';
+// prettier-ignore
 import ja from 'date-fns/locale/ja';
 
 // ダミーデータ

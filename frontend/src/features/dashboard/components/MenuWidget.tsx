@@ -1,6 +1,8 @@
 import { RestaurantMenu as MenuIcon } from '@mui/icons-material';
 import { Card, CardContent, CardHeader, Divider, Grid, Typography } from '@mui/material';
+// prettier-ignore
 import { format } from 'date-fns';
+// prettier-ignore
 import ja from 'date-fns/locale/ja';
 
 interface MenuWidgetProps {

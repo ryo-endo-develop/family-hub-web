@@ -31,7 +31,9 @@ import {
   Stack,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
+// prettier-ignore
 import { format } from 'date-fns';
+// prettier-ignore
 import ja from 'date-fns/locale/ja';
 
 import { TaskFilter } from '../types';
@@ -251,18 +253,20 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
               onChange={handleStatusChange}
               displayEmpty
               disabled={disabled}
-              renderValue={(selected) => {
+              renderValue={selected => {
                 if (selected === '') {
                   return <Typography sx={{ opacity: 0.6 }}>すべて</Typography>;
                 }
-                
+
                 const statusLabels: Record<string, string> = {
                   pending: '未着手',
                   in_progress: '進行中',
                   completed: '完了',
                 };
-                
-                return statusLabels[selected as 'pending' | 'in_progress' | 'completed'] || selected;
+
+                return (
+                  statusLabels[selected as 'pending' | 'in_progress' | 'completed'] || selected
+                );
               }}
             >
               <MenuItem value="">すべて</MenuItem>
@@ -285,17 +289,17 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
               onChange={handlePriorityChange}
               displayEmpty
               disabled={disabled}
-              renderValue={(selected) => {
+              renderValue={selected => {
                 if (selected === '') {
                   return <Typography sx={{ opacity: 0.6 }}>すべて</Typography>;
                 }
-                
+
                 const priorityLabels: Record<string, string> = {
                   high: '高',
                   medium: '中',
                   low: '低',
                 };
-                
+
                 return priorityLabels[selected as 'low' | 'medium' | 'high'] || selected;
               }}
             >

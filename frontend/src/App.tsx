@@ -3,12 +3,13 @@ import { useEffect } from 'react';
 import { CssBaseline, ThemeProvider } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+// prettier-ignore
 import ja from 'date-fns/locale/ja';
 
 import { registerLogoutHandler, setGlobalNotificationHandler } from './api/client';
 import AppRoutes from './app/router';
 import NotificationContainer from './components/NotificationContainer';
-import { NotificationProvider , useNotification } from './contexts/NotificationContext';
+import { NotificationProvider, useNotification } from './contexts/NotificationContext';
 import { checkAuth, logout } from './features/auth/authSlice';
 import { useAppDispatch } from './hooks/reduxHooks';
 import { theme } from './styles/theme';

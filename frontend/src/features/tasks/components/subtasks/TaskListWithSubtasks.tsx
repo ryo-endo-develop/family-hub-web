@@ -25,8 +25,10 @@ import {
   Typography,
   Chip,
 } from '@mui/material';
+// prettier-ignore
 import { format } from 'date-fns';
 import { getTagChipStyles } from '../../../../utils/tagUtils';
+// prettier-ignore
 import ja from 'date-fns/locale/ja';
 
 import { Task, Tag } from '../../types';
@@ -142,12 +144,7 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, level, onEdit, onDelete, onAddS
         <TableCell>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
             {task.tags.map((tag: Tag) => (
-              <Chip
-                key={tag.id}
-                label={tag.name}
-                size="small"
-                sx={getTagChipStyles(tag, false)}
-              />
+              <Chip key={tag.id} label={tag.name} size="small" sx={getTagChipStyles(tag, false)} />
             ))}
           </Box>
         </TableCell>
