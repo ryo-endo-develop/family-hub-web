@@ -1,4 +1,5 @@
 import { SxProps, Theme } from '@mui/material';
+
 import { Tag } from '../features/tasks/types';
 
 // Basic theme color palette that matches Material UI theme
@@ -47,7 +48,11 @@ export const themeColors = {
  * @param isSelected - Whether the tag is currently selected
  * @returns The appropriate color value for the tag
  */
-export const getTagColor = (tagId: string, tagColor?: string | null, isSelected = false): string | undefined => {
+export const getTagColor = (
+  tagId: string,
+  tagColor?: string | null,
+  isSelected = false,
+): string | undefined => {
   // If selected and not providing a background color, return undefined to use the default selection color
   if (isSelected) {
     return undefined;
@@ -61,17 +66,19 @@ export const getTagColor = (tagId: string, tagColor?: string | null, isSelected 
   // Otherwise generate a deterministic color based on the tag ID
   // Use the first and last characters of the ID to get a consistent color
   const colorSeed = tagId.charCodeAt(0) + tagId.charCodeAt(tagId.length - 1);
-  
+
   // Select a color category based on the ID
   const colorKeys = ['primary', 'secondary', 'accent', 'success', 'warning', 'error'];
   const selectedColorCategory = colorKeys[colorSeed % colorKeys.length];
-  
+
   // Select a shade based on the ID
   const shadeKeys = ['light', 'main', 'dark'];
   const selectedShade = shadeKeys[(colorSeed >> 4) % shadeKeys.length];
-  
+
   // Return the color from our theme palette
-  return themeColors[selectedColorCategory as keyof typeof themeColors][selectedShade as keyof typeof themeColors[keyof typeof themeColors]];
+  return themeColors[selectedColorCategory as keyof typeof themeColors][
+    selectedShade as keyof (typeof themeColors)[keyof typeof themeColors]
+  ];
 };
 
 /**
@@ -81,26 +88,26 @@ export const getTagColor = (tagId: string, tagColor?: string | null, isSelected 
  */
 export const shouldUseWhiteText = (color?: string | null): boolean => {
   if (!color) return false;
-  
+
   // For named colors in our themeColors that have 'dark' in their key
   if (typeof color === 'string' && color.toLowerCase().includes('dark')) {
     return true;
   }
-  
+
   // For hex colors, calculate luminance
   if (color.startsWith('#')) {
     // Convert hex to RGB
     const r = parseInt(color.slice(1, 3), 16);
     const g = parseInt(color.slice(3, 5), 16);
     const b = parseInt(color.slice(5, 7), 16);
-    
+
     // Calculate perceived brightness using the formula: (0.299*R + 0.587*G + 0.114*B)
     const brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    
+
     // Use white text if brightness is low (dark color)
     return brightness < 0.6;
   }
-  
+
   return false;
 };
 
@@ -113,12 +120,12 @@ export const shouldUseWhiteText = (color?: string | null): boolean => {
 export const getTagChipStyles = (tag: Tag, isSelected: boolean): SxProps<Theme> => {
   const tagColor = getTagColor(tag.id, tag.color, isSelected);
   const useWhiteText = shouldUseWhiteText(tagColor);
-  
+
   // If the tag is selected, MUI will handle the styling with its color prop
   if (isSelected) {
     return {};
   }
-  
+
   return {
     bgcolor: tagColor,
     borderColor: tagColor,

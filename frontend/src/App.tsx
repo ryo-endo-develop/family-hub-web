@@ -10,8 +10,8 @@ import AppRoutes from './app/router';
 import NotificationContainer from './components/NotificationContainer';
 import { NotificationProvider , useNotification } from './contexts/NotificationContext';
 import { checkAuth, logout } from './features/auth/authSlice';
-import { theme } from './styles/theme';
 import { useAppDispatch } from './hooks/reduxHooks';
+import { theme } from './styles/theme';
 
 // グローバル通知ハンドラーを設定するためのコンポーネント
 const NotificationHandler = () => {

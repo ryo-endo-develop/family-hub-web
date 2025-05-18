@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosRequestHeaders, AxiosHeaderValue } from 'axios';
+import axios, { AxiosError } from 'axios';
 
 import { NotificationType } from '../contexts/NotificationContext';
 
@@ -71,7 +71,7 @@ apiClient.interceptors.request.use(
     // CSRF対策：フォームデータを送信する場合は状態を確認
     if (
       (config.method === 'post' || config.method === 'put' || config.method === 'delete') &&
-      config.headers && 
+      config.headers &&
       config.headers['Content-Type'] === 'application/x-www-form-urlencoded'
     ) {
       // CSRF対策としてヘッダーにリファラー情報を追加

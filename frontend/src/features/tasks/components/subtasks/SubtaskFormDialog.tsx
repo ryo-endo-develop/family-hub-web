@@ -26,8 +26,8 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 
 import { useTagApi } from '../../../../api/hooks/useTagApi';
 import { useTaskApi } from '../../../../api/hooks/useTaskApi';
-import { SubtaskCreate, Tag, Task, subtaskCreateSchema } from '../../types';
 import { getTagChipStyles } from '../../../../utils/tagUtils';
+import { SubtaskCreate, Tag, Task, subtaskCreateSchema } from '../../types';
 
 interface SubtaskFormDialogProps {
   open: boolean;
