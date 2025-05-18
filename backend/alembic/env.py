@@ -2,10 +2,11 @@ import asyncio
 import os
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import engine_from_config, pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
+
+from alembic import context
 
 # モデルのメタデータをインポート
 from app.db.session import Base
@@ -22,7 +23,14 @@ target_metadata = Base.metadata
 
 # DATABASE_URL 環境変数があれば、それを使用
 if os.environ.get("DATABASE_URL"):
-    config.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"])
+    raw_url = os.environ["DATABASE_URL"]
+
+    # asyncpgを使用するためにURLを変換
+    if raw_url.startswith("postgresql://"):
+        async_url = raw_url.replace("postgresql://", "postgresql+asyncpg://")
+        config.set_main_option("sqlalchemy.url", async_url)
+    else:
+        config.set_main_option("sqlalchemy.url", raw_url)
 
 
 def run_migrations_offline() -> None:
