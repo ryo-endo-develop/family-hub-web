@@ -8,7 +8,16 @@ Base = declarative_base()
 
 # 環境変数からDBのURLを取得
 # デフォルト値は開発環境でのみ使用、本番環境では必ずDATABASE_URLを設定する
-SQLALCHEMY_DATABASE_URL = os.environ.get("DATABASE_URL")
+raw_database_url = os.environ.get("DATABASE_URL")
+
+# asyncpgを使用するためにURLを変換する
+def convert_to_asyncpg_url(url):
+    if url and url.startswith("postgresql://"):
+        # postgresql:// を postgresql+asyncpg:// に変換
+        return url.replace("postgresql://", "postgresql+asyncpg://")
+    return url
+
+SQLALCHEMY_DATABASE_URL = convert_to_asyncpg_url(raw_database_url)
 
 # テスト中かどうかを確認
 TESTING = os.getenv("TESTING", "False").lower() in ("true", "1", "t")
