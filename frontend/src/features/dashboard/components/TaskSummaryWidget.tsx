@@ -27,7 +27,7 @@ const TaskSummaryWidget = ({ familyId }: TaskSummaryWidgetProps) => {
   const { getTasks, updateTask, loading, error } = useTaskApi();
   const { addNotification } = useNotification();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [taskCount, setTaskCount] = useState(0);
+  const [_taskCount, setTaskCount] = useState(0); // Added underscore to mark as unused
   const [updatingTaskIds, setUpdatingTaskIds] = useState<Set<string>>(new Set());
 
   // タスク一覧を取得

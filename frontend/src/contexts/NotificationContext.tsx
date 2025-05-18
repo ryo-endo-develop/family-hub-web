@@ -36,7 +36,8 @@ const NotificationContext = createContext<{
 // リデューサー
 function notificationReducer(state: NotificationState, action: NotificationAction): NotificationState {
   switch (action.type) {
-    case 'ADD_NOTIFICATION':
+    case 'ADD_NOTIFICATION': {
+      // ブロックスコープを使用して変数を宣言
       const id = Date.now(); // 一意のIDとして現在のタイムスタンプを使用
       return {
         ...state,
@@ -50,6 +51,7 @@ function notificationReducer(state: NotificationState, action: NotificationActio
           },
         ],
       };
+    }
     case 'REMOVE_NOTIFICATION':
       return {
         ...state,

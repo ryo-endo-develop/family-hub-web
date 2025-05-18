@@ -1,7 +1,15 @@
 import { useState, useCallback } from 'react';
 
+import { AxiosError } from 'axios';
+
 import { Tag } from '../../features/tasks/types';
 import apiClient from '../client';
+
+// API エラーレスポンスの型定義
+interface ApiErrorResponse {
+  detail?: string;
+  message?: string;
+}
 
 export const useTagApi = () => {
   const [loading, setLoading] = useState(false);
@@ -19,9 +27,10 @@ export const useTagApi = () => {
     try {
       const response = await apiClient.get(`/tags/family/${familyId}`);
       return response.data.data;
-    } catch (err: any) {
+    } catch (err) {
       console.error('タグ取得エラー:', err);
-      const message = err.response?.data?.detail || 'タグの取得に失敗しました';
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      const message = axiosError.response?.data?.detail || 'タグの取得に失敗しました';
       setError(message);
       return null;
     } finally {

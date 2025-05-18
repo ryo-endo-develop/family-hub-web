@@ -11,7 +11,7 @@ export const tagSchema = z.object({
 export type Tag = z.infer<typeof tagSchema>;
 
 // タスクスキーマ（再帰的な定義）
-export const taskSchema = z.lazy(() => z.object<any>({
+export const taskSchema = z.lazy(() => z.object({
   id: z.string().uuid(),
   title: z.string().min(1, 'タイトルは必須です'),
   description: z.string().optional().nullable(),

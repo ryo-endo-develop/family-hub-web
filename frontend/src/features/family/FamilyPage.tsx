@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 
+
 import { Add as AddIcon, Person as PersonIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import {
   Box,
@@ -16,6 +17,7 @@ import {
   Alert,
   IconButton,
 } from '@mui/material';
+import { AxiosError } from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 import { useFamilyApi, Family, FamilyMember } from '../../api/hooks/useFamilyApi';
@@ -25,6 +27,12 @@ import { setCurrentFamily } from '../auth/authSlice';
 
 import AddMemberDialog from './components/AddMemberDialog';
 import CreateFamilyDialog from './components/CreateFamilyDialog';
+
+// API エラーレスポンスの型定義
+interface ApiErrorResponse {
+  detail?: string;
+  message?: string;
+}
 
 const FamilyPage = () => {
   const dispatch = useAppDispatch();
@@ -58,9 +66,10 @@ const FamilyPage = () => {
       } else if (apiError) {
         setError(apiError);
       }
-    } catch (err: any) {
+    } catch (err) {
+      const axiosError = err as AxiosError<ApiErrorResponse>;
       setError('家族情報の取得に失敗しました');
-      console.error('家族情報取得エラー:', err);
+      console.error('家族情報取得エラー:', axiosError);
     } finally {
       setLoading(false);
     }
@@ -77,8 +86,9 @@ const FamilyPage = () => {
       if (fetchedMembers) {
         setFamilyMembers(fetchedMembers);
       }
-    } catch (err: any) {
-      console.error('家族メンバー取得エラー:', err);
+    } catch (err) {
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      console.error('家族メンバー取得エラー:', axiosError);
     } finally {
       setMembersLoading(false);
     }

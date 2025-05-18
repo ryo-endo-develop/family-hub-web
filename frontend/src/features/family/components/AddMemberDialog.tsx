@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
@@ -18,10 +19,17 @@ import {
   Alert,
   FormHelperText,
 } from '@mui/material';
+import { AxiosError } from 'axios';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 
 import { useFamilyApi } from '../../../api/hooks/useFamilyApi';
+
+// API エラーレスポンスの型定義
+interface ApiErrorResponse {
+  detail?: string;
+  message?: string;
+}
 
 // バリデーションスキーマ
 const memberSchema = z.object({
@@ -82,8 +90,9 @@ const AddMemberDialog: React.FC<AddMemberDialogProps> = ({ open, familyId, onClo
         onClose(true, data.user_email);
       }
       // 失敗時はダイアログを開いたままエラー表示
-    } catch (error: any) {
-      console.error('メンバー追加中にエラーが発生しました:', error);
+    } catch (error) {
+      const axiosError = error as AxiosError<ApiErrorResponse>;
+      console.error('メンバー追加中にエラーが発生しました:', axiosError);
       // エラーはフック内で処理されるのでここでは何もしない
     }
   };

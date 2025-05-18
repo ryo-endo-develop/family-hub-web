@@ -27,7 +27,7 @@ interface PlacesWidgetProps {
   familyId: string;
 }
 
-const PlacesWidget = ({ familyId }: PlacesWidgetProps) => {
+const PlacesWidget = ({ _familyId }: PlacesWidgetProps) => {
   return (
     <Card>
       <CardHeader title="お出かけスポット" action={<PlaceIcon />} />

@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
 
+import { AxiosError } from 'axios';
+
 import apiClient from '../client';
 
 export interface FamilyMember {
@@ -18,6 +20,12 @@ export interface FamilyMember {
   };
 }
 
+// API エラーレスポンスの型定義
+interface ApiErrorResponse {
+  detail?: string;
+  message?: string;
+}
+
 export const useFamilyApi = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,9 +42,10 @@ export const useFamilyApi = () => {
     try {
       const response = await apiClient.get(`/families/${familyId}/members`);
       return response.data.data;
-    } catch (err: any) {
+    } catch (err) {
       console.error('家族メンバー取得エラー:', err);
-      const message = err.response?.data?.detail || '家族メンバーの取得に失敗しました';
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      const message = axiosError.response?.data?.detail || '家族メンバーの取得に失敗しました';
       setError(message);
       return null;
     } finally {

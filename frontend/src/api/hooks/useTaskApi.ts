@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
 
+import { AxiosError } from 'axios';
+
 import {
   Task,
   TaskCreate,
@@ -9,6 +11,12 @@ import {
   SubtaskCreate,
 } from '../../features/tasks/types';
 import apiClient from '../client';
+
+// API エラーレスポンスの型定義
+interface ApiErrorResponse {
+  detail?: string;
+  message?: string;
+}
 
 /**
  * タスクAPI操作のためのフック
@@ -70,9 +78,10 @@ export const useTaskApi = () => {
 
         setError('APIレスポンスの形式が不正です');
         return null;
-      } catch (err: any) {
+      } catch (err) {
         console.error('タスク取得エラー:', err);
-        const message = err.response?.data?.detail || 'タスクの取得に失敗しました';
+        const axiosError = err as AxiosError<ApiErrorResponse>;
+        const message = axiosError.response?.data?.detail || 'タスクの取得に失敗しました';
         setError(message);
         return null;
       } finally {
@@ -130,9 +139,10 @@ export const useTaskApi = () => {
 
         setError('APIレスポンスの形式が不正です');
         return null;
-      } catch (err: any) {
+      } catch (err) {
         console.error('ルートタスク取得エラー:', err);
-        const message = err.response?.data?.detail || 'タスクの取得に失敗しました';
+        const axiosError = err as AxiosError<ApiErrorResponse>;
+        const message = axiosError.response?.data?.detail || 'タスクの取得に失敗しました';
         setError(message);
         return null;
       } finally {
@@ -152,9 +162,10 @@ export const useTaskApi = () => {
     try {
       const response = await apiClient.get(`/tasks/${task_id}`);
       return response.data.data;
-    } catch (err: any) {
+    } catch (err) {
       console.error('タスク詳細取得エラー:', err);
-      const message = err.response?.data?.detail || 'タスクの取得に失敗しました';
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      const message = axiosError.response?.data?.detail || 'タスクの取得に失敗しました';
       setError(message);
       return null;
     } finally {
@@ -172,9 +183,10 @@ export const useTaskApi = () => {
     try {
       const response = await apiClient.get(`/tasks/with-subtasks/${task_id}`);
       return response.data.data;
-    } catch (err: any) {
+    } catch (err) {
       console.error('タスク詳細取得エラー:', err);
-      const message = err.response?.data?.detail || 'タスクの取得に失敗しました';
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      const message = axiosError.response?.data?.detail || 'タスクの取得に失敗しました';
       setError(message);
       return null;
     } finally {
@@ -203,9 +215,10 @@ export const useTaskApi = () => {
 
       const response = await apiClient.post('/tasks', formattedTask);
       return response.data.data;
-    } catch (err: any) {
+    } catch (err) {
       console.error('タスク作成エラー:', err);
-      const message = err.response?.data?.detail || 'タスクの作成に失敗しました';
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      const message = axiosError.response?.data?.detail || 'タスクの作成に失敗しました';
       setError(message);
       return null;
     } finally {
@@ -230,9 +243,10 @@ export const useTaskApi = () => {
 
         const response = await apiClient.post(`/tasks/${parent_id}/subtasks`, formattedTask);
         return response.data.data;
-      } catch (err: any) {
+      } catch (err) {
         console.error('サブタスク作成エラー:', err);
-        const message = err.response?.data?.detail || 'サブタスクの作成に失敗しました';
+        const axiosError = err as AxiosError<ApiErrorResponse>;
+        const message = axiosError.response?.data?.detail || 'サブタスクの作成に失敗しました';
         setError(message);
         return null;
       } finally {
@@ -279,17 +293,18 @@ export const useTaskApi = () => {
 
         const response = await apiClient.put(`/tasks/${task_id}`, formattedTask);
         return response.data.data;
-      } catch (err: any) {
+      } catch (err) {
         console.error('タスク更新エラー:', err);
+        const axiosError = err as AxiosError<ApiErrorResponse>;
         // レスポンスの詳細をログ出力
-        if (err.response) {
+        if (axiosError.response) {
           console.error('Error response:', {
-            status: err.response.status,
-            headers: err.response.headers,
-            data: err.response.data,
+            status: axiosError.response.status,
+            headers: axiosError.response.headers,
+            data: axiosError.response.data,
           });
         }
-        const message = err.response?.data?.detail || 'タスクの更新に失敗しました';
+        const message = axiosError.response?.data?.detail || 'タスクの更新に失敗しました';
         setError(message);
         return null;
       } finally {
@@ -309,9 +324,10 @@ export const useTaskApi = () => {
     try {
       await apiClient.delete(`/tasks/${task_id}`);
       return true;
-    } catch (err: any) {
+    } catch (err) {
       console.error('タスク削除エラー:', err);
-      const message = err.response?.data?.detail || 'タスクの削除に失敗しました';
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      const message = axiosError.response?.data?.detail || 'タスクの削除に失敗しました';
       setError(message);
       return false;
     } finally {

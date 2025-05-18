@@ -140,8 +140,12 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
 
       // 更新があったことを通知し、タイトルも渡す
       onClose(true, data.title);
-    } catch (error: any) {
-      setError(error.message || 'サブタスクの保存に失敗しました');
+    } catch (error: unknown) {
+      setError(
+        error instanceof Error 
+          ? error.message 
+          : 'サブタスクの保存に失敗しました'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -150,6 +154,20 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
   // ダイアログを閉じる
   const handleClose = () => {
     onClose(false);
+  };
+
+  // タグ選択の切り替え処理
+  const handleTagToggle = (tagId: string) => {
+    // 現在のタグID配列を取得
+    const currentTagIds = selectedTagIds || [];
+    
+    // 既に選択されていれば削除、なければ追加
+    const newTagIds = currentTagIds.includes(tagId)
+      ? currentTagIds.filter(id => id !== tagId)
+      : [...currentTagIds, tagId];
+    
+    // フォームの値を更新
+    setValue('tag_ids', newTagIds);
   };
 
   return (
@@ -209,14 +227,7 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
                       <Chip
                         key={tag.id}
                         label={tag.name}
-                        onClick={() => {
-                          // タグ選択の切り替え
-                          const currentTagIds = selectedTagIds || [];
-                          const newTagIds = currentTagIds.includes(tag.id)
-                            ? currentTagIds.filter(id => id !== tag.id)
-                            : [...currentTagIds, tag.id];
-                          setValue('tag_ids', newTagIds);
-                        }}
+                        onClick={() => handleTagToggle(tag.id)}
                         size="small"
                         color={isSelected ? 'primary' : 'default'}
                         variant={isSelected ? 'filled' : 'outlined'}

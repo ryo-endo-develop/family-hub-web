@@ -1,7 +1,15 @@
 import { useState } from 'react';
 
+import { AxiosError } from 'axios';
+
 import { LoginCredentials, RegisterData, User } from '../../features/auth/authSlice';
 import apiClient from '../client';
+
+// API エラーレスポンスの型定義
+interface ApiErrorResponse {
+  detail?: string;
+  message?: string;
+}
 
 export const useAuthApi = () => {
   const [loading, setLoading] = useState(false);
@@ -38,8 +46,9 @@ export const useAuthApi = () => {
         token: access_token,
         user: userResponse.data.data,
       };
-    } catch (err: any) {
-      const message = err.response?.data?.detail || 'ログインに失敗しました';
+    } catch (err) {
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      const message = axiosError.response?.data?.detail || 'ログインに失敗しました';
       setError(message);
       return null;
     } finally {
@@ -54,8 +63,9 @@ export const useAuthApi = () => {
     try {
       const response = await apiClient.post('/auth/register', userData);
       return response.data.data;
-    } catch (err: any) {
-      const message = err.response?.data?.detail || '登録に失敗しました';
+    } catch (err) {
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      const message = axiosError.response?.data?.detail || '登録に失敗しました';
       setError(message);
       return null;
     } finally {
@@ -70,8 +80,9 @@ export const useAuthApi = () => {
     try {
       const response = await apiClient.get('/users/me');
       return response.data.data;
-    } catch (err: any) {
-      const message = err.response?.data?.detail || 'ユーザー情報の取得に失敗しました';
+    } catch (err) {
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      const message = axiosError.response?.data?.detail || 'ユーザー情報の取得に失敗しました';
       setError(message);
       return null;
     } finally {

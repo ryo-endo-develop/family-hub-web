@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 
 import { NotificationType } from '../contexts/NotificationContext';
 
@@ -28,14 +28,16 @@ export const getAccessToken = (): string | null => {
   return accessToken;
 };
 
+interface PendingRequest {
+  resolve: (value: unknown) => void;
+  reject: (reason?: unknown) => void;
+  config: AxiosRequestConfig;
+}
+
 // リフレッシュ処理中かどうかのフラグ
 let isRefreshing = false;
 // リフレッシュ待ちのリクエスト
-let pendingRequests: Array<{
-  resolve: (value: unknown) => void;
-  reject: (reason?: any) => void;
-  config: any;
-}> = [];
+let pendingRequests: PendingRequest[] = [];
 
 // APIベースURLを環境変数から取得
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
@@ -175,7 +177,7 @@ apiClient.interceptors.response.use(
 
       // すでにリフレッシュ中なら、リフレッシュが完了するのを待つ
       if (isRefreshing) {
-        return new Promise((resolve, reject) => {
+        return new Promise<unknown>((resolve, reject) => {
           pendingRequests.push({
             resolve,
             reject,

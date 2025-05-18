@@ -1,6 +1,13 @@
 import { PayloadAction, createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { AxiosError } from 'axios';
 
 import apiClient, { checkAuthStatus, setAccessToken } from '../../api/client';
+
+// API エラーレスポンスの型定義
+interface ApiErrorResponse {
+  detail?: string;
+  message?: string;
+}
 
 // 型定義
 export interface FamilyMembership {
@@ -166,11 +173,12 @@ export const login = createAsyncThunk(
           name: currentFamilyName,
         },
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error('ログインエラー:', error);
+      const axiosError = error as AxiosError<ApiErrorResponse>;
       let message = 'ログインに失敗しました';
-      if (error.response && error.response.data && error.response.data.detail) {
-        message = error.response.data.detail;
+      if (axiosError.response?.data?.detail) {
+        message = axiosError.response.data.detail;
       }
       return rejectWithValue(message);
     }
@@ -183,10 +191,11 @@ export const register = createAsyncThunk(
     try {
       const response = await apiClient.post('/auth/register', userData);
       return response.data.data;
-    } catch (error: any) {
+    } catch (error) {
+      const axiosError = error as AxiosError<ApiErrorResponse>;
       let message = '登録に失敗しました';
-      if (error.response && error.response.data && error.response.data.detail) {
-        message = error.response.data.detail;
+      if (axiosError.response?.data?.detail) {
+        message = axiosError.response.data.detail;
       }
       return rejectWithValue(message);
     }

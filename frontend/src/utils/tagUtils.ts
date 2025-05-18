@@ -1,9 +1,9 @@
-import { SxProps, Theme } from '@mui/material';
+/**
+ * Tag utility functions
+ */
 
-import { Tag } from '../features/tasks/types';
-
-// Basic theme color palette that matches Material UI theme
-export const themeColors = {
+// Tag color palette - consistent with theme colors
+export const tagColors = {
   primary: {
     light: '#7986cb',
     main: '#3f51b5',
@@ -13,11 +13,6 @@ export const themeColors = {
     light: '#ff4081',
     main: '#f50057',
     dark: '#c51162',
-  },
-  accent: {
-    light: '#4dd0e1',
-    main: '#00bcd4',
-    dark: '#0097a7',
   },
   success: {
     light: '#81c784',
@@ -41,97 +36,62 @@ export const themeColors = {
   },
 };
 
-/**
- * Determines a consistent color for a tag based on its ID or specified color
- * @param tagId - The tag's ID to use for deterministic color generation
- * @param tagColor - The tag's color if already specified
- * @param isSelected - Whether the tag is currently selected
- * @returns The appropriate color value for the tag
- */
-export const getTagColor = (
-  tagId: string,
-  tagColor?: string | null,
-  isSelected = false,
-): string | undefined => {
-  // If selected and not providing a background color, return undefined to use the default selection color
+// Determines tag color based on tag ID or color
+export const getTagColor = (tag: { id: string; color?: string }, isSelected: boolean) => {
   if (isSelected) {
-    return undefined;
+    return undefined; // When selected, use MUI's default color
   }
 
-  // If the tag has a specified color, use that
-  if (tagColor) {
-    return tagColor;
+  // If tag has a color set, use it as base
+  if (tag.color) {
+    // If it's a valid hex color code, use it directly
+    if (tag.color.startsWith('#') && (tag.color.length === 7 || tag.color.length === 4)) {
+      return tag.color;
+    }
   }
 
-  // Otherwise generate a deterministic color based on the tag ID
-  // Use the first and last characters of the ID to get a consistent color
-  const colorSeed = tagId.charCodeAt(0) + tagId.charCodeAt(tagId.length - 1);
+  // Generate consistent color based on tag ID
+  const tagId = tag.id || 'default';
+  const seed = tagId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
 
-  // Select a color category based on the ID
-  const colorKeys = ['primary', 'secondary', 'accent', 'success', 'warning', 'error'];
-  const selectedColorCategory = colorKeys[colorSeed % colorKeys.length];
-
-  // Select a shade based on the ID
-  const shadeKeys = ['light', 'main', 'dark'];
-  const selectedShade = shadeKeys[(colorSeed >> 4) % shadeKeys.length];
-
-  // Return the color from our theme palette
-  return themeColors[selectedColorCategory as keyof typeof themeColors][
-    selectedShade as keyof (typeof themeColors)[keyof typeof themeColors]
-  ];
+  // Select from color palette
+  const colorKeys = Object.keys(tagColors);
+  const colorKey = colorKeys[seed % colorKeys.length] as keyof typeof tagColors;
+  
+  // Select brightness level (light, main, dark)
+  const brightLevels = ['light', 'main', 'dark'] as const;
+  const brightLevel = brightLevels[(seed >> 4) % brightLevels.length];
+  
+  return tagColors[colorKey][brightLevel];
 };
 
-/**
- * Determines if a color is dark (to use white text) or light (to use dark text)
- * @param color - The color to check, as a hex string
- * @returns true if the text should be white, false if the text should be dark
- */
-export const shouldUseWhiteText = (color?: string | null): boolean => {
-  if (!color) return false;
-
-  // For named colors in our themeColors that have 'dark' in their key
-  if (typeof color === 'string' && color.toLowerCase().includes('dark')) {
-    return true;
-  }
-
-  // For hex colors, calculate luminance
-  if (color.startsWith('#')) {
-    // Convert hex to RGB
-    const r = parseInt(color.slice(1, 3), 16);
-    const g = parseInt(color.slice(3, 5), 16);
-    const b = parseInt(color.slice(5, 7), 16);
-
-    // Calculate perceived brightness using the formula: (0.299*R + 0.587*G + 0.114*B)
-    const brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-    // Use white text if brightness is low (dark color)
-    return brightness < 0.6;
-  }
-
-  return false;
-};
-
-/**
- * Gets consistent styles for tag chips throughout the application
- * @param tag - The tag object
- * @param isSelected - Whether the tag is selected
- * @returns - MUI sx prop object for styling
- */
-export const getTagChipStyles = (tag: Tag, isSelected: boolean): SxProps<Theme> => {
-  const tagColor = getTagColor(tag.id, tag.color, isSelected);
-  const useWhiteText = shouldUseWhiteText(tagColor);
-
-  // If the tag is selected, MUI will handle the styling with its color prop
+// Returns style object for tag chips
+export const getTagChipStyles = (tag: { id: string; color?: string }, isSelected: boolean) => {
   if (isSelected) {
+    // Selected tags use MUI's default styles
     return {};
   }
-
+  
+  const tagColor = getTagColor(tag, isSelected);
+  
   return {
-    bgcolor: tagColor,
-    borderColor: tagColor,
-    color: useWhiteText ? '#fff' : 'inherit',
+    bgcolor: isSelected ? undefined : tagColor,
+    borderColor: isSelected ? undefined : tagColor,
+    color: isSelected 
+      ? undefined 
+      : tagColor && tagColor.toLowerCase().includes('dark') 
+        ? '#fff' 
+        : 'inherit',
     '&:hover': {
-      bgcolor: tagColor ? `${tagColor}99` : undefined, // Add transparency for hover state
+      bgcolor: isSelected 
+        ? undefined 
+        : tagColor ? `${tagColor}99` : undefined, // Add transparency
     },
   };
+};
+
+export default {
+  getTagColor,
+  getTagChipStyles,
+  tagColors,
 };

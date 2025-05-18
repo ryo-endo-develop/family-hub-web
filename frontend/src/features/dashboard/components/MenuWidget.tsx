@@ -16,7 +16,7 @@ const dummyMenus = {
   dinner: '鮭のホイル焼き・サラダ',
 };
 
-const MenuWidget = ({ familyId }: MenuWidgetProps) => {
+const MenuWidget = ({ _familyId }: MenuWidgetProps) => {
   const today = new Date();
   const formattedDate = format(today, 'M月d日（E）', { locale: ja });
 

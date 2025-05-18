@@ -23,7 +23,6 @@ import {
   ListItemText,
   ListItemAvatar,
   Typography,
-  useTheme,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
@@ -31,6 +30,7 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useFamilyApi, FamilyMember } from '../../../api/hooks/useFamilyApi';
 import { useTagApi } from '../../../api/hooks/useTagApi';
 import { useTaskApi } from '../../../api/hooks/useTaskApi';
+import { getTagChipStyles } from '../../../utils/tagUtils';
 import { Task, TaskCreate, Tag, taskCreateSchema } from '../types';
 
 interface TaskFormDialogProps {
@@ -40,42 +40,7 @@ interface TaskFormDialogProps {
   familyId: string;
 }
 
-// テーマに沿ったタグカラーパレット
-const tagColors = {
-  primary: {
-    light: '#7986cb',
-    main: '#3f51b5',
-    dark: '#303f9f',
-  },
-  secondary: {
-    light: '#ff4081',
-    main: '#f50057',
-    dark: '#c51162',
-  },
-  success: {
-    light: '#81c784',
-    main: '#4caf50',
-    dark: '#388e3c',
-  },
-  warning: {
-    light: '#ffb74d',
-    main: '#ff9800',
-    dark: '#f57c00',
-  },
-  error: {
-    light: '#e57373',
-    main: '#f44336',
-    dark: '#d32f2f',
-  },
-  grey: {
-    light: '#e0e0e0',
-    main: '#9e9e9e',
-    dark: '#616161',
-  },
-};
-
 const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) => {
-  const theme = useTheme();
   const taskApi = useTaskApi();
   const familyApi = useFamilyApi();
   const tagApi = useTagApi();
@@ -115,67 +80,6 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
   // 選択中のタグIDを監視
   const selectedTagIds = watch('tag_ids') || [];
 
-  // タグの色を取得するヘルパー関数
-  // タグごとに一貫した落ち着いた色を生成
-  const getTagColor = useCallback(
-    (tag: Tag, isSelected: boolean) => {
-      if (isSelected) {
-        return undefined; // 選択時はMUIが適用するカラーを使用
-      }
-
-      // タグに色が設定されている場合はそれをベースにする
-      if (tag.color) {
-        // 有効なHEXカラーコードが設定されていればそのまま使用
-        if (tag.color.startsWith('#') && (tag.color.length === 7 || tag.color.length === 4)) {
-          return tag.color;
-        }
-      }
-
-      // タグIDを使って一貫した色を生成
-      const tagId = tag.id || 'default';
-      const seed = tagId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-
-      // カラーパレットから色を選択
-      const colorKeys = Object.keys(tagColors);
-      const colorKey = colorKeys[seed % colorKeys.length] as keyof typeof tagColors;
-      
-      // 明るさレベルも選択（light, main, dark）
-      const brightLevels = ['light', 'main', 'dark'] as const;
-      const brightLevel = brightLevels[(seed >> 4) % brightLevels.length];
-      
-      return tagColors[colorKey][brightLevel];
-    },
-    []
-  );
-
-  // タグのスタイルを取得
-  const getTagChipStyles = useCallback(
-    (tag: Tag, isSelected: boolean) => {
-      if (isSelected) {
-        // 選択されたタグはMUIのデフォルトスタイルを使用
-        return {};
-      }
-      
-      const tagColor = getTagColor(tag, isSelected);
-      
-      return {
-        bgcolor: isSelected ? undefined : tagColor,
-        borderColor: isSelected ? undefined : tagColor,
-        color: isSelected 
-          ? undefined 
-          : tagColor && tagColor.toLowerCase().includes('dark') 
-            ? '#fff' 
-            : 'inherit',
-        '&:hover': {
-          bgcolor: isSelected 
-            ? undefined 
-            : tagColor ? `${tagColor}99` : undefined, // 透明度を追加
-        },
-      };
-    },
-    [getTagColor]
-  );
-
   // 家族メンバーとタグを取得する関数
   const fetchFamilyData = useCallback(
     async (familyId: string) => {
@@ -201,7 +105,7 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
       }
     },
     [familyApi, tagApi],
-  ); // APIフックを依存配列に追加
+  ); 
 
   // ダイアログが開かれた時にデータを取得
   useEffect(() => {
@@ -302,9 +206,13 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
 
       // 更新があったことを通知し、タイトルも渡す
       onClose(true, data.title);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to save task:', error);
-      setError(error.message || 'タスクの保存に失敗しました');
+      setError(
+        error instanceof Error 
+          ? error.message 
+          : 'タスクの保存に失敗しました'
+      );
     } finally {
       setSubmitting(false);
     }
