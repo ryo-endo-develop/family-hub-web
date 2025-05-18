@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       // 本番ビルドの最適化
-      minify: 'terser',
+      minify: mode === 'production' ? 'terser' : 'esbuild', // Terserが利用できない場合の代替手段として
       terserOptions: {
         compress: {
           drop_console: mode === 'production', // 本番環境ではconsoleを削除
