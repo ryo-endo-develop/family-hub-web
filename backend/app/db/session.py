@@ -13,7 +13,7 @@ TESTING = os.getenv("TESTING", "False").lower() in ("true", "1", "t")
 # デバッグモードかどうか
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 
-# データベースURLを取得（環境変数から）
+# データベースURLを取得と非同期ドライバー確保
 if TESTING:
     # テスト環境ではSQLiteを使用
     DATABASE_URL = "sqlite+aiosqlite:////tmp/test.db"
@@ -21,9 +21,19 @@ if TESTING:
     print(f"テスト環境のデータベースURL: {DATABASE_URL}")
 else:
     # 本番/ローカル環境ではPostgreSQLを使用（環境変数から）
-    DATABASE_URL = os.environ.get(
-        "DATABASE_URL", "postgresql+asyncpg://postgres:postgres@db:5432/syncfam"
-    )
+    raw_url = os.environ.get("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@db:5432/syncfam")
+    
+    # PostgreSQLの場合、必ずasyncpgドライバを使用するように変換
+    if raw_url.startswith("postgresql://"):
+        DATABASE_URL = raw_url.replace("postgresql://", "postgresql+asyncpg://")
+        print(f"注意: DATABASE_URLをasyncpgドライバ用に変換しました: {DATABASE_URL}")
+    else:
+        DATABASE_URL = raw_url
+        # URLが asyncpg を使用しているか確認
+        if "postgresql" in DATABASE_URL and "+asyncpg" not in DATABASE_URL:
+            print("警告: PostgreSQLを使用していますが、asyncpgドライバが指定されていません")
+            print("      DATABASE_URLを 'postgresql+asyncpg://' で始まるように設定することをお勧めします")
+    
     connect_args = {}
     print(f"データベースURL: {DATABASE_URL}")
 
