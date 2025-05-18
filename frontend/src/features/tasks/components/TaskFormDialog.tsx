@@ -28,27 +28,10 @@ import {
 import { DatePicker } from '@mui/x-date-pickers';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 
-import { useFamilyApi } from '../../../api/hooks/useFamilyApi';
+import { useFamilyApi, FamilyMember } from '../../../api/hooks/useFamilyApi';
 import { useTagApi } from '../../../api/hooks/useTagApi';
 import { useTaskApi } from '../../../api/hooks/useTaskApi';
 import { Task, TaskCreate, Tag, taskCreateSchema } from '../types';
-
-// 家族メンバーの型定義
-interface FamilyMember {
-  id: string;
-  user_id: string;
-  family_id: string;
-  role: string;
-  is_admin: boolean;
-  joined_at: string;
-  user: {
-    id: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-    avatar_url?: string;
-  };
-}
 
 interface TaskFormDialogProps {
   open: boolean;
@@ -260,7 +243,7 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
         due_date: dueDate,
         family_id: task.family_id,
         assignee_id: task.assignee_id || null,
-        tag_ids: task.tags.map((tag: any) => tag.id),
+        tag_ids: task.tags.map((tag) => tag.id),
       });
     } else {
       reset({
@@ -541,7 +524,7 @@ const TaskFormDialog = ({ open, task, onClose, familyId }: TaskFormDialogProps) 
                     利用可能なタグがありません
                   </Typography>
                 ) : (
-                  tags.map((tag: Tag) => {
+                  tags.map((tag) => {
                     const isSelected = selectedTagIds.includes(tag.id);
 
                     return (

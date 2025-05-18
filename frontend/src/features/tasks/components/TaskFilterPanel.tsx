@@ -251,7 +251,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
               onChange={handleStatusChange}
               displayEmpty
               disabled={disabled}
-              renderValue={(selected: any) => {
+              renderValue={(selected) => {
                 if (selected === '') {
                   return <Typography sx={{ opacity: 0.6 }}>すべて</Typography>;
                 }
@@ -285,7 +285,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
               onChange={handlePriorityChange}
               displayEmpty
               disabled={disabled}
-              renderValue={(selected: any) => {
+              renderValue={(selected) => {
                 if (selected === '') {
                   return <Typography sx={{ opacity: 0.6 }}>すべて</Typography>;
                 }
