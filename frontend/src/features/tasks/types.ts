@@ -11,37 +11,47 @@ export const tagSchema = z.object({
 export type Tag = z.infer<typeof tagSchema>;
 
 // タスクスキーマ（再帰的な定義）
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const taskSchema = z.lazy(() => z.object({
-  id: z.string().uuid(),
-  title: z.string().min(1, 'タイトルは必須です'),
-  description: z.string().optional().nullable(),
-  due_date: z.string().nullable().optional().transform(val => val ? new Date(val) : null),
-  status: z.enum(['pending', 'in_progress', 'completed']).default('pending'),
-  priority: z.enum(['low', 'medium', 'high']).default('medium'),
-  is_routine: z.boolean().default(false),
-  family_id: z.string().uuid(),
-  parent_id: z.string().uuid().nullable().optional(),  // 親タスクID
-  assignee_id: z.string().uuid().nullable().optional(),
-  assignee: z.object({
+export const taskSchema = z.lazy(() =>
+  z.object({
     id: z.string().uuid(),
-    first_name: z.string(),
-    last_name: z.string(),
-    avatar_url: z.string().nullable().optional(),
-  }).nullable().optional(),
-  created_by_id: z.string().uuid(),
-  created_by: z.object({
-    id: z.string().uuid(),
-    first_name: z.string(),
-    last_name: z.string(),
-    avatar_url: z.string().nullable().optional(),
-  }).nullable().optional(),
-  created_at: z.string().transform(val => new Date(val)),
-  updated_at: z.string().transform(val => new Date(val)),
-  tags: z.array(tagSchema).default([]),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  subtasks: z.array(z.lazy(() => taskSchema)).default([]), // サブタスク
-}));
+    title: z.string().min(1, 'タイトルは必須です'),
+    description: z.string().optional().nullable(),
+    due_date: z
+      .string()
+      .nullable()
+      .optional()
+      .transform(val => (val ? new Date(val) : null)),
+    status: z.enum(['pending', 'in_progress', 'completed']).default('pending'),
+    priority: z.enum(['low', 'medium', 'high']).default('medium'),
+    is_routine: z.boolean().default(false),
+    family_id: z.string().uuid(),
+    parent_id: z.string().uuid().nullable().optional(), // 親タスクID
+    assignee_id: z.string().uuid().nullable().optional(),
+    assignee: z
+      .object({
+        id: z.string().uuid(),
+        first_name: z.string(),
+        last_name: z.string(),
+        avatar_url: z.string().nullable().optional(),
+      })
+      .nullable()
+      .optional(),
+    created_by_id: z.string().uuid(),
+    created_by: z
+      .object({
+        id: z.string().uuid(),
+        first_name: z.string(),
+        last_name: z.string(),
+        avatar_url: z.string().nullable().optional(),
+      })
+      .nullable()
+      .optional(),
+    created_at: z.string().transform(val => new Date(val)),
+    updated_at: z.string().transform(val => new Date(val)),
+    tags: z.array(tagSchema).default([]),
+    subtasks: z.array(z.lazy((): any => taskSchema)).default([]), // サブタスク
+  }),
+);
 
 export type Task = z.infer<typeof taskSchema>;
 
@@ -77,9 +87,9 @@ export const taskUpdateSchema = z.object({
 export type TaskUpdate = z.infer<typeof taskUpdateSchema>;
 
 // サブタスク作成スキーマ（parent_idとfamily_idフィールドを除外）
-export const subtaskCreateSchema = taskCreateSchema.omit({ 
-  family_id: true, 
-  parent_id: true 
+export const subtaskCreateSchema = taskCreateSchema.omit({
+  family_id: true,
+  parent_id: true,
 });
 export type SubtaskCreate = z.infer<typeof subtaskCreateSchema>;
 

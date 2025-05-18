@@ -248,13 +248,13 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
             <Select
               labelId="status-label"
               id="status-select"
-              value={filters.status || ''}
+              value={filters.status === undefined ? '' : filters.status}
               label="ステータス"
               onChange={handleStatusChange}
               displayEmpty
               disabled={disabled}
-              renderValue={selected => {
-                if (selected === '') {
+              renderValue={(selected: string) => {
+                if (selected === '' || !selected) {
                   return <Typography sx={{ opacity: 0.6 }}>すべて</Typography>;
                 }
 
@@ -264,9 +264,7 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
                   completed: '完了',
                 };
 
-                return (
-                  statusLabels[selected as string] || selected
-                );
+                return statusLabels[selected as string] || selected;
               }}
             >
               <MenuItem value="">すべて</MenuItem>
@@ -284,13 +282,13 @@ const TaskFilterPanel = ({ filters, onFilterChange, disabled = false }: TaskFilt
             <Select
               labelId="priority-label"
               id="priority-select"
-              value={filters.priority || ''}
+              value={filters.priority === undefined ? '' : filters.priority}
               label="優先度"
               onChange={handlePriorityChange}
               displayEmpty
               disabled={disabled}
-              renderValue={selected => {
-                if (selected === '') {
+              renderValue={(selected: string) => {
+                if (selected === '' || !selected) {
                   return <Typography sx={{ opacity: 0.6 }}>すべて</Typography>;
                 }
 
