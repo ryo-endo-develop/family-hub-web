@@ -37,7 +37,7 @@ databases:
     region: singapore  # APIサービスと同じリージョンを推奨
     plan: free               # 必要に応じて変更 (例: starter, standard)
                               # 無料プランには制限があるため、本番用途では有料プランを検討
-    postgresqlVersion: "15"  # docker-compose.yml のバージョンに合わせる
+    postgresMajorVersion: "15"  # docker-compose.yml のバージョンに合わせる
     # ipAllowList: []        # デフォルトではRenderネットワーク内からのみアクセス可能
                               # 外部から直接DBにアクセスする場合は、ここにIPアドレス/CIDRを指定
                               # 例: [{ "source": "YOUR_IP_ADDRESS/32", "description": "My Home IP" }]
