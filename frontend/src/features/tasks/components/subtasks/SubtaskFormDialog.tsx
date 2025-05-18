@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -17,12 +17,17 @@ import {
   TextField,
   Alert,
   Typography,
+  Box,
+  Chip,
+  CircularProgress,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 
+import { useTagApi } from '../../../../api/hooks/useTagApi';
 import { useTaskApi } from '../../../../api/hooks/useTaskApi';
-import { SubtaskCreate, Task, subtaskCreateSchema } from '../../types';
+import { SubtaskCreate, Tag, Task, subtaskCreateSchema } from '../../types';
+import { getTagChipStyles } from '../../../../utils/tagUtils';
 
 interface SubtaskFormDialogProps {
   open: boolean;
@@ -32,14 +37,19 @@ interface SubtaskFormDialogProps {
 
 const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps) => {
   const taskApi = useTaskApi();
+  const tagApi = useTagApi();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [isLoadingTags, setIsLoadingTags] = useState(false);
 
   // React Hook Formの設定
   const {
     control,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<SubtaskCreate>({
     resolver: zodResolver(subtaskCreateSchema),
@@ -55,9 +65,33 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
     },
   });
 
-  // ダイアログが開くたびにフォームをリセット
+  // 選択中のタグIDを監視
+  const selectedTagIds = watch('tag_ids') || [];
+
+  // タグデータの取得
+  const fetchTags = useCallback(async () => {
+    if (!parentTask.family_id) return;
+    
+    setIsLoadingTags(true);
+    try {
+      const tagsResult = await tagApi.getFamilyTags(parentTask.family_id);
+      if (tagsResult) {
+        setTags(tagsResult);
+      }
+    } catch (err) {
+      console.error('タグの取得に失敗しました:', err);
+    } finally {
+      setIsLoadingTags(false);
+    }
+  }, [parentTask.family_id, tagApi]);
+
+  // 前回のopen状態を保持するref
+  const prevOpenRef = useRef(false);
+
+  // ダイアログが開くたびにフォームをリセットし、タグを取得
   useEffect(() => {
-    if (open) {
+    // openがfalseからtrueに変わった場合のみ実行
+    if (open && !prevOpenRef.current) {
       reset({
         title: '',
         description: '',
@@ -68,8 +102,14 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
         assignee_id: null,
         tag_ids: [],
       });
+      
+      // タグを取得
+      fetchTags();
     }
-  }, [open, reset]);
+    
+    // 現在のopen状態を保存
+    prevOpenRef.current = open;
+  }, [open, reset, fetchTags]);
 
   // フォーム送信ハンドラ
   const onSubmit: SubmitHandler<SubtaskCreate> = async data => {
@@ -84,6 +124,11 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
         } catch (e) {
           data.due_date = null;
         }
+      }
+
+      // タグデータを確認
+      if (!data.tag_ids) {
+        data.tag_ids = [];
       }
 
       // サブタスク作成
@@ -139,6 +184,54 @@ const SubtaskFormDialog = ({ open, parentTask, onClose }: SubtaskFormDialogProps
                     helperText={errors.title?.message}
                   />
                 )}
+              />
+            </Grid>
+
+            {/* タグ選択 */}
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" gutterBottom>
+                タグ
+              </Typography>
+              {isLoadingTags ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                  <CircularProgress size={24} />
+                </Box>
+              ) : tags.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  利用可能なタグがありません
+                </Typography>
+              ) : (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {tags.map(tag => {
+                    const isSelected = selectedTagIds.includes(tag.id);
+
+                    return (
+                      <Chip
+                        key={tag.id}
+                        label={tag.name}
+                        onClick={() => {
+                          // タグ選択の切り替え
+                          const currentTagIds = selectedTagIds || [];
+                          const newTagIds = currentTagIds.includes(tag.id)
+                            ? currentTagIds.filter(id => id !== tag.id)
+                            : [...currentTagIds, tag.id];
+                          setValue('tag_ids', newTagIds);
+                        }}
+                        size="small"
+                        color={isSelected ? 'primary' : 'default'}
+                        variant={isSelected ? 'filled' : 'outlined'}
+                        sx={getTagChipStyles(tag, isSelected)}
+                      />
+                    );
+                  })}
+                </Box>
+              )}
+              
+              {/* タグIDフィールド（非表示） */}
+              <Controller
+                name="tag_ids"
+                control={control}
+                render={({ field }) => <input type="hidden" {...field} />}
               />
             </Grid>
 

@@ -26,6 +26,7 @@ import {
   Chip,
 } from '@mui/material';
 import { format } from 'date-fns';
+import { getTagChipStyles } from '../../../../utils/tagUtils';
 import ja from 'date-fns/locale/ja';
 
 import { Task } from '../../types';
@@ -145,9 +146,7 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, level, onEdit, onDelete, onAddS
                 key={tag.id}
                 label={tag.name}
                 size="small"
-                sx={{
-                  backgroundColor: tag.color || undefined,
-                }}
+                sx={getTagChipStyles(tag, false)}
               />
             ))}
           </Box>

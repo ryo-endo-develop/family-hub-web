@@ -29,6 +29,7 @@ import {
   Stack,
 } from '@mui/material';
 import { format } from 'date-fns';
+import { getTagChipStyles } from '../../../utils/tagUtils';
 import ja from 'date-fns/locale/ja';
 
 import { Task } from '../types';
@@ -203,8 +204,7 @@ const TaskList = ({
                         label={tag.name}
                         size="small"
                         sx={{
-                          backgroundColor: tag.color || undefined,
-                          color: '#ffffff',
+                          ...getTagChipStyles(tag, false),
                           height: 20,
                           fontSize: '0.7rem',
                         }}
@@ -294,10 +294,7 @@ const TaskList = ({
                         key={tag.id}
                         label={tag.name}
                         size="small"
-                        sx={{
-                          backgroundColor: tag.color || undefined,
-                          color: '#ffffff',
-                        }}
+                        sx={getTagChipStyles(tag, false)}
                       />
                     ))}
                   </Box>
